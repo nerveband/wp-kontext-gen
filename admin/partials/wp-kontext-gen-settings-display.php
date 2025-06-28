@@ -272,6 +272,10 @@ $current_model = get_option('wp_kontext_gen_model', 'dev');
                         <span class="dashicons dashicons-database"></span>
                         <?php _e('Debug Database', 'wp-kontext-gen'); ?>
                     </button>
+                    <button type="button" class="button button-secondary" id="test-database-insert">
+                        <span class="dashicons dashicons-database-add"></span>
+                        <?php _e('Test Database Insert', 'wp-kontext-gen'); ?>
+                    </button>
                 </p>
             </div>
         </div>

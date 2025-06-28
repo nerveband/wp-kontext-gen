@@ -300,12 +300,17 @@ class WP_Kontext_Gen_Admin {
         global $wpdb;
         $table_name = $wpdb->prefix . 'kontext_gen_history';
         
+        // Custom logging function that works regardless of WP_DEBUG
+        $this->log_debug("Starting save_to_history function");
+        
         // Check if table exists first
         $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
         if (!$table_exists) {
-            error_log("WP Kontext Gen: History table $table_name does not exist");
+            $this->log_debug("History table $table_name does not exist");
             // Try to create the table
             $this->create_history_table();
+        } else {
+            $this->log_debug("History table $table_name exists");
         }
         
         $insert_data = array(
@@ -317,13 +322,34 @@ class WP_Kontext_Gen_Admin {
             'prediction_id' => $prediction['id'],
         );
         
+        $this->log_debug("Attempting to insert data: " . print_r($insert_data, true));
+        
         $result = $wpdb->insert($table_name, $insert_data);
         
         if ($result === false) {
-            error_log("WP Kontext Gen: Failed to insert into history table. Error: " . $wpdb->last_error);
-            error_log("WP Kontext Gen: Data attempted to insert: " . print_r($insert_data, true));
+            $this->log_debug("Failed to insert into history table. Error: " . $wpdb->last_error);
+            $this->log_debug("Last query: " . $wpdb->last_query);
         } else {
-            error_log("WP Kontext Gen: Successfully inserted into history table. ID: " . $wpdb->insert_id);
+            $this->log_debug("Successfully inserted into history table. ID: " . $wpdb->insert_id . ", Rows affected: " . $result);
+        }
+    }
+    
+    /**
+     * Custom debug logging that works regardless of WP_DEBUG settings
+     */
+    private function log_debug($message) {
+        // Always log to a custom file in uploads directory
+        $upload_dir = wp_upload_dir();
+        $log_file = $upload_dir['basedir'] . '/wp-kontext-gen-debug.log';
+        
+        $timestamp = date('Y-m-d H:i:s');
+        $log_message = "[$timestamp] $message" . PHP_EOL;
+        
+        file_put_contents($log_file, $log_message, FILE_APPEND | LOCK_EX);
+        
+        // Also try WordPress error log if available
+        if (function_exists('error_log')) {
+            error_log("WP Kontext Gen: $message");
         }
     }
     
@@ -723,9 +749,59 @@ class WP_Kontext_Gen_Admin {
         $debug_info['wp_debug'] = defined('WP_DEBUG') && WP_DEBUG ? 'Enabled' : 'Disabled';
         $debug_info['wp_debug_log'] = defined('WP_DEBUG_LOG') && WP_DEBUG_LOG ? 'Enabled' : 'Disabled';
         
+        // Get recent log entries
+        $upload_dir = wp_upload_dir();
+        $log_file = $upload_dir['basedir'] . '/wp-kontext-gen-debug.log';
+        if (file_exists($log_file)) {
+            $log_contents = file_get_contents($log_file);
+            $log_lines = explode("\n", $log_contents);
+            $debug_info['recent_logs'] = array_slice(array_filter($log_lines), -10); // Last 10 non-empty lines
+        } else {
+            $debug_info['recent_logs'] = array('No debug log file found');
+        }
+        
         wp_send_json_success(array(
             'debug_info' => $debug_info,
             'message' => __('Database debug information retrieved', 'wp-kontext-gen')
+        ));
+    }
+    
+    /**
+     * Handle test database insert via AJAX
+     */
+    public function handle_test_database_insert() {
+        check_ajax_referer('wp_kontext_gen_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Unauthorized', 'wp-kontext-gen'));
+        }
+        
+        $this->log_debug("Starting test database insert");
+        
+        // Test data
+        $test_params = array(
+            'prompt' => 'Test prompt for debugging',
+            'input_image' => 'https://example.com/test.jpg'
+        );
+        
+        $test_prediction = array(
+            'id' => 'test-prediction-' . time(),
+            'status' => 'starting'
+        );
+        
+        // Try to insert test data
+        $this->save_to_history($test_params, $test_prediction);
+        
+        // Check if it worked
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'kontext_gen_history';
+        $count = $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE prompt = 'Test prompt for debugging'");
+        
+        $this->log_debug("Test insert result: $count test records found");
+        
+        wp_send_json_success(array(
+            'test_records_created' => intval($count),
+            'message' => sprintf(__('Test insert completed. %d test records found.', 'wp-kontext-gen'), $count)
         ));
     }
 }

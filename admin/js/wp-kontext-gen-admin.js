@@ -221,6 +221,15 @@
                             html += '<p><strong>Recent Records:</strong> ' + debug.recent_records.length + ' found</p>';
                         }
                         
+                        if (debug.recent_logs && debug.recent_logs.length > 0) {
+                            html += '<p><strong>Recent Debug Logs:</strong></p>';
+                            html += '<div style="background: #f9f9f9; padding: 10px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto;">';
+                            debug.recent_logs.forEach(function(log) {
+                                html += log + '<br>';
+                            });
+                            html += '</div>';
+                        }
+                        
                         html += '</div>';
                         statusDiv.html(html);
                     } else {
@@ -230,6 +239,42 @@
                 error: function() {
                     button.prop('disabled', false).find('.dashicons').removeClass('dashicons-update-alt');
                     statusDiv.html('<div class="notice notice-error inline"><p>Error running database debug.</p></div>');
+                }
+            });
+        });
+        
+        // Test database insert
+        $('#test-database-insert').on('click', function() {
+            let button = $(this);
+            let statusDiv = $('#debug-status');
+            
+            button.prop('disabled', true).find('.dashicons').addClass('dashicons-update-alt');
+            statusDiv.html('<div class="notice notice-info inline"><p>Testing database insert...</p></div>');
+            
+            $.ajax({
+                url: wpKontextGen.ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'wp_kontext_gen_test_database_insert',
+                    nonce: wpKontextGen.nonce
+                },
+                success: function(response) {
+                    button.prop('disabled', false).find('.dashicons').removeClass('dashicons-update-alt');
+                    
+                    if (response.success) {
+                        let html = '<div class="notice notice-success inline">';
+                        html += '<p><strong>Test Insert Result:</strong> ' + response.data.test_records_created + ' test records created</p>';
+                        html += '<p>' + response.data.message + '</p>';
+                        html += '<p><em>Now click "Debug Database" to see detailed logs</em></p>';
+                        html += '</div>';
+                        statusDiv.html(html);
+                    } else {
+                        statusDiv.html('<div class="notice notice-error inline"><p>Test insert failed: ' + (response.data.message || 'Unknown error') + '</p></div>');
+                    }
+                },
+                error: function() {
+                    button.prop('disabled', false).find('.dashicons').removeClass('dashicons-update-alt');
+                    statusDiv.html('<div class="notice notice-error inline"><p>Error running test database insert.</p></div>');
                 }
             });
         });
