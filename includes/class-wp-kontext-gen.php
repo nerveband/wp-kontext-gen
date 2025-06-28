@@ -49,6 +49,9 @@ class WP_Kontext_Gen {
         
         // Settings
         $this->loader->add_action('admin_init', $plugin_admin, 'register_settings');
+        
+        // Auto-migration on plugin load
+        $this->loader->add_action('admin_init', $plugin_admin, 'check_database_migration');
     }
     
     public function run() {

@@ -398,47 +398,44 @@ class WP_Kontext_Gen_Admin {
             return;
         }
         
-        // Check if prediction_id column exists
+        // Get current columns
         $columns = $wpdb->get_results("DESCRIBE $table_name");
-        $has_prediction_id = false;
+        $existing_columns = array();
         foreach ($columns as $column) {
-            if ($column->Field === 'prediction_id') {
-                $has_prediction_id = true;
-                break;
+            $existing_columns[] = $column->Field;
+        }
+        
+        $this->log_debug("Current columns: " . implode(', ', $existing_columns));
+        
+        // Define required columns and their definitions
+        $required_columns = array(
+            'cost_usd' => "ADD COLUMN cost_usd decimal(10,6) DEFAULT NULL AFTER parameters",
+            'prediction_id' => "ADD COLUMN prediction_id varchar(255) AFTER cost_usd", 
+            'created_at' => "ADD COLUMN created_at datetime DEFAULT CURRENT_TIMESTAMP AFTER prediction_id"
+        );
+        
+        $columns_added = 0;
+        
+        // Add missing columns in order
+        foreach ($required_columns as $column_name => $sql_definition) {
+            if (!in_array($column_name, $existing_columns)) {
+                $this->log_debug("Missing $column_name column, adding it");
+                $sql = "ALTER TABLE $table_name $sql_definition";
+                $result = $wpdb->query($sql);
+                if ($result === false) {
+                    $this->log_debug("Failed to add $column_name column: " . $wpdb->last_error);
+                } else {
+                    $this->log_debug("Successfully added $column_name column");
+                    $columns_added++;
+                    // Update existing columns list for next iteration
+                    $existing_columns[] = $column_name;
+                }
             }
         }
         
-        if (!$has_prediction_id) {
-            $this->log_debug("Missing prediction_id column, adding it");
-            $sql = "ALTER TABLE $table_name ADD COLUMN prediction_id varchar(255) AFTER status";
-            $result = $wpdb->query($sql);
-            if ($result === false) {
-                $this->log_debug("Failed to add prediction_id column: " . $wpdb->last_error);
-            } else {
-                $this->log_debug("Successfully added prediction_id column");
-                update_option('wp_kontext_gen_db_version', '1.2.6');
-            }
-        }
-        
-        // Check if created_at column exists
-        $has_created_at = false;
-        foreach ($columns as $column) {
-            if ($column->Field === 'created_at') {
-                $has_created_at = true;
-                break;
-            }
-        }
-        
-        if (!$has_created_at) {
-            $this->log_debug("Missing created_at column, adding it");
-            $sql = "ALTER TABLE $table_name ADD COLUMN created_at datetime DEFAULT CURRENT_TIMESTAMP AFTER prediction_id";
-            $result = $wpdb->query($sql);
-            if ($result === false) {
-                $this->log_debug("Failed to add created_at column: " . $wpdb->last_error);
-            } else {
-                $this->log_debug("Successfully added created_at column");
-                update_option('wp_kontext_gen_db_version', '1.2.6');
-            }
+        if ($columns_added > 0) {
+            update_option('wp_kontext_gen_db_version', '1.2.7');
+            $this->log_debug("Added $columns_added columns, updated DB version to 1.2.7");
         }
         
         $this->log_debug("Database migration completed");
@@ -898,5 +895,19 @@ class WP_Kontext_Gen_Admin {
             'columns' => $column_names,
             'message' => sprintf(__('Database migration completed. Table now has %d columns.', 'wp-kontext-gen'), count($column_names))
         ));
+    }
+    
+    /**
+     * Check if database migration is needed on plugin load
+     */
+    public function check_database_migration() {
+        $current_db_version = get_option('wp_kontext_gen_db_version', '1.0.0');
+        $plugin_version = WP_KONTEXT_GEN_VERSION;
+        
+        // Only run migration if database version is older than plugin version
+        if (version_compare($current_db_version, $plugin_version, '<')) {
+            $this->log_debug("Auto-migration triggered: DB version $current_db_version < Plugin version $plugin_version");
+            $this->migrate_database();
+        }
     }
 }
