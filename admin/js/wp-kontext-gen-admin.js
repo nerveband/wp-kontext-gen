@@ -211,8 +211,8 @@
             });
         });
         
-        // Save to media library
-        $('.save-to-media-btn').on('click', function() {
+        // Save to media library (use event delegation for dynamically created buttons)
+        $(document).on('click', '.save-to-media-btn', function() {
             let button = $(this);
             let imageUrl = button.data('url');
             let title = button.data('title');
@@ -375,15 +375,34 @@
         
         // Update status display
         function updateStatus(data) {
-            let statusText = 'Status: ' + data.status;
+            let statusText = '';
             
-            if (data.status === 'processing' && data.logs) {
-                // Show progress if available
-                let logs = data.logs.split('\n');
-                let lastLog = logs[logs.length - 1];
-                if (lastLog) {
-                    statusText += ' - ' + lastLog;
-                }
+            switch (data.status) {
+                case 'starting':
+                    statusText = 'Starting generation...';
+                    break;
+                case 'processing':
+                    statusText = 'Processing image...';
+                    if (data.logs) {
+                        let logs = data.logs.split('\n');
+                        let lastLog = logs[logs.length - 1];
+                        if (lastLog) {
+                            statusText += ' - ' + lastLog;
+                        }
+                    }
+                    break;
+                case 'succeeded':
+                    statusText = 'Generation completed successfully!';
+                    break;
+                case 'failed':
+                    statusText = 'Generation failed';
+                    if (data.error) {
+                        statusText += ': ' + data.error;
+                    }
+                    break;
+                default:
+                    statusText = 'Status: ' + data.status;
+                    break;
             }
             
             $('#generation-status').html(statusText);
@@ -399,10 +418,21 @@
             }
             
             if (output && output.length > 0) {
-                let html = '<img src="' + output[0] + '" alt="Generated image" />';
+                let imageUrl = output[0];
+                let html = '<img src="' + imageUrl + '" alt="Generated image" />';
                 html += '<div class="result-actions">';
-                html += '<a href="' + output[0] + '" class="button button-primary" target="_blank">View Full Size</a>';
-                html += '<button type="button" class="button" onclick="wpKontextGenDownload(\'' + output[0] + '\')">Download</button>';
+                html += '<a href="' + imageUrl + '" class="button button-primary" target="_blank">View Full Size</a>';
+                html += '<button type="button" class="button" onclick="wpKontextGenDownload(\'' + imageUrl + '\')">Download</button>';
+                
+                // Add Save to Media Library button
+                if (data.attachment_id) {
+                    // Already saved to media library
+                    html += '<a href="' + wpKontextGen.adminUrl + 'post.php?post=' + data.attachment_id + '&action=edit" class="button button-secondary">Edit in Media Library</a>';
+                } else {
+                    // Not saved yet, show save button
+                    html += '<button type="button" class="button save-to-media-btn" data-url="' + imageUrl + '" data-title="Kontext Generated - ' + new Date().toISOString().slice(0, 19).replace('T', ' ') + '">Save to Media Library</button>';
+                }
+                
                 html += '</div>';
                 
                 $('#generation-result').html(html);

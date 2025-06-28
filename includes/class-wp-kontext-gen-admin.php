@@ -284,7 +284,10 @@ class WP_Kontext_Gen_Admin {
         
         // Update history if completed
         if ($result['status'] === 'succeeded' || $result['status'] === 'failed') {
-            $this->update_history_status($prediction_id, $result);
+            $attachment_id = $this->update_history_status($prediction_id, $result);
+            if ($attachment_id) {
+                $result['attachment_id'] = $attachment_id;
+            }
         }
         
         wp_send_json_success($result);
@@ -321,23 +324,34 @@ class WP_Kontext_Gen_Admin {
             'status' => $result['status'],
         );
         
-        // Add cost information if available
-        if (isset($result['metrics']['predict_time'])) {
-            // Estimate cost based on prediction time
-            // FLUX.1 Kontext typically costs around $0.003 per second
-            $predict_time = floatval($result['metrics']['predict_time']);
-            $estimated_cost = $predict_time * 0.003;
-            $update_data['cost_usd'] = $estimated_cost;
+        $attachment_id = null;
+        
+        // Add cost information - FLUX Kontext models charge per image
+        if ($result['status'] === 'succeeded') {
+            $current_model = get_option('wp_kontext_gen_model', 'dev');
+            switch ($current_model) {
+                case 'pro':
+                    $cost_per_image = 0.04; // $0.04 per image
+                    break;
+                case 'max':
+                    $cost_per_image = 0.08; // $0.08 per image
+                    break;
+                default: // dev
+                    $cost_per_image = 0.025; // $0.025 per image
+                    break;
+            }
+            $update_data['cost_usd'] = $cost_per_image;
         }
         
         if ($result['status'] === 'succeeded' && !empty($result['output'])) {
             $output_url = is_array($result['output']) ? $result['output'][0] : $result['output'];
             $update_data['output_image_url'] = $output_url;
             
-            // Save to media library
+            // Save to media library by default
             $media_result = $this->api->save_to_media_library($output_url, 'Kontext Gen - ' . date('Y-m-d H:i:s'));
             if (!is_wp_error($media_result)) {
-                $update_data['attachment_id'] = $media_result['id'];
+                $attachment_id = $media_result['id'];
+                $update_data['attachment_id'] = $attachment_id;
             }
         }
         
@@ -346,6 +360,8 @@ class WP_Kontext_Gen_Admin {
             $update_data,
             array('prediction_id' => $prediction_id)
         );
+        
+        return $attachment_id;
     }
     
     /**
