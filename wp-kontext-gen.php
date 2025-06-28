@@ -57,6 +57,8 @@ function wp_kontext_gen_activate() {
         attachment_id bigint(20),
         parameters text,
         status varchar(20) DEFAULT 'pending',
+        cost_usd decimal(10,6) DEFAULT NULL,
+        prediction_id varchar(255),
         created_at datetime DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id)
     ) $charset_collate;";

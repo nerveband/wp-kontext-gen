@@ -24,7 +24,8 @@ $defaults = get_option('wp_kontext_gen_default_params', array());
 
 // Get default/last image
 $default_image = '';
-if (get_option('wp_kontext_gen_remember_last_image')) {
+$remember_last = get_option('wp_kontext_gen_remember_last_image', 1); // Default to enabled
+if ($remember_last) {
     $default_image = get_option('wp_kontext_gen_last_image', '');
 }
 if (empty($default_image)) {
@@ -67,9 +68,23 @@ if (empty($default_image)) {
                     <p class="description"><?php _e('Image to use as reference for editing. Must be jpeg, png, gif, or webp.', 'wp-kontext-gen'); ?></p>
                 </div>
                 
+                <!-- Submit Button -->
+                <div class="form-group">
+                    <button type="submit" class="button button-primary button-large" id="generate-btn">
+                        <?php _e('Generate Image', 'wp-kontext-gen'); ?>
+                    </button>
+                    <button type="button" class="button button-secondary" id="cancel-btn" style="display:none;">
+                        <?php _e('Cancel', 'wp-kontext-gen'); ?>
+                    </button>
+                </div>
+                
                 <!-- Advanced Options -->
                 <div class="form-group">
-                    <h3><?php _e('Advanced Options', 'wp-kontext-gen'); ?></h3>
+                    <h3 class="advanced-options-toggle" style="cursor: pointer;">
+                        <span class="dashicons dashicons-arrow-right" id="advanced-toggle-icon"></span>
+                        <?php _e('Advanced Options', 'wp-kontext-gen'); ?>
+                    </h3>
+                    <div id="advanced-options-content" style="display: none;">
                     
                     <!-- Aspect Ratio -->
                     <div class="form-field">
@@ -140,16 +155,7 @@ if (empty($default_image)) {
                         </label>
                         <p class="description"><?php _e('Disable NSFW content filtering', 'wp-kontext-gen'); ?></p>
                     </div>
-                </div>
-                
-                <!-- Submit Button -->
-                <div class="form-group">
-                    <button type="submit" class="button button-primary button-large" id="generate-btn">
-                        <?php _e('Generate Image', 'wp-kontext-gen'); ?>
-                    </button>
-                    <button type="button" class="button button-secondary" id="cancel-btn" style="display:none;">
-                        <?php _e('Cancel', 'wp-kontext-gen'); ?>
-                    </button>
+                    </div> <!-- Close advanced-options-content -->
                 </div>
             </form>
         </div>

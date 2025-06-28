@@ -46,7 +46,7 @@ if (isset($_POST['submit'])) {
 $api_key = get_option('wp_kontext_gen_api_key', '');
 $defaults = get_option('wp_kontext_gen_default_params', array());
 $default_image = get_option('wp_kontext_gen_default_image', '');
-$remember_last = get_option('wp_kontext_gen_remember_last_image', 0);
+$remember_last = get_option('wp_kontext_gen_remember_last_image', 1); // Default to enabled
 ?>
 
 <div class="wrap">

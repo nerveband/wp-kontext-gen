@@ -10,6 +10,20 @@
 
     $(document).ready(function() {
         
+        // Toggle advanced options
+        $('.advanced-options-toggle').on('click', function() {
+            let content = $('#advanced-options-content');
+            let icon = $('#advanced-toggle-icon');
+            
+            if (content.is(':visible')) {
+                content.slideUp();
+                icon.removeClass('dashicons-arrow-down').addClass('dashicons-arrow-right');
+            } else {
+                content.slideDown();
+                icon.removeClass('dashicons-arrow-right').addClass('dashicons-arrow-down');
+            }
+        });
+        
         // Media uploader for input image
         $('#upload_input_image').on('click', function(e) {
             e.preventDefault();
@@ -136,6 +150,42 @@
                 error: function() {
                     alert(wpKontextGen.strings.error);
                     button.prop('disabled', false).text('Clear All History');
+                }
+            });
+        });
+        
+        // Save to media library
+        $('.save-to-media-btn').on('click', function() {
+            let button = $(this);
+            let imageUrl = button.data('url');
+            let title = button.data('title');
+            
+            button.prop('disabled', true).text('Saving...');
+            
+            $.ajax({
+                url: wpKontextGen.ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'wp_kontext_gen_save_to_media_library',
+                    nonce: wpKontextGen.nonce,
+                    image_url: imageUrl,
+                    title: title
+                },
+                success: function(response) {
+                    if (response.success) {
+                        button.remove();
+                        // Add Edit in WP button
+                        let editButton = '<a href="' + wpKontextGen.adminUrl + 'post.php?post=' + response.data.attachment_id + '&action=edit" class="button button-small">Edit in WP</a>';
+                        button.parent().append(editButton);
+                        alert('Image saved to media library successfully!');
+                    } else {
+                        alert(response.data.message || wpKontextGen.strings.error);
+                        button.prop('disabled', false).text('Save to Media');
+                    }
+                },
+                error: function() {
+                    alert(wpKontextGen.strings.error);
+                    button.prop('disabled', false).text('Save to Media');
                 }
             });
         });

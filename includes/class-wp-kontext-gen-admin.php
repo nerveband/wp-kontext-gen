@@ -162,6 +162,7 @@ class WP_Kontext_Gen_Admin {
         
         wp_localize_script($this->plugin_name, 'wpKontextGen', array(
             'ajaxurl' => admin_url('admin-ajax.php'),
+            'adminUrl' => admin_url(),
             'nonce' => wp_create_nonce('wp_kontext_gen_nonce'),
             'strings' => array(
                 'generating' => __('Generating...', 'wp-kontext-gen'),
@@ -297,6 +298,7 @@ class WP_Kontext_Gen_Admin {
                 'input_image_url' => isset($params['input_image']) ? $params['input_image'] : null,
                 'parameters' => json_encode($params),
                 'status' => $prediction['status'],
+                'prediction_id' => $prediction['id'],
             )
         );
     }
@@ -312,6 +314,15 @@ class WP_Kontext_Gen_Admin {
             'status' => $result['status'],
         );
         
+        // Add cost information if available
+        if (isset($result['metrics']['predict_time'])) {
+            // Estimate cost based on prediction time
+            // FLUX.1 Kontext typically costs around $0.003 per second
+            $predict_time = floatval($result['metrics']['predict_time']);
+            $estimated_cost = $predict_time * 0.003;
+            $update_data['cost_usd'] = $estimated_cost;
+        }
+        
         if ($result['status'] === 'succeeded' && !empty($result['output'])) {
             $output_url = is_array($result['output']) ? $result['output'][0] : $result['output'];
             $update_data['output_image_url'] = $output_url;
@@ -326,7 +337,7 @@ class WP_Kontext_Gen_Admin {
         $wpdb->update(
             $table_name,
             $update_data,
-            array('id' => $prediction_id)
+            array('prediction_id' => $prediction_id)
         );
     }
     
@@ -396,5 +407,50 @@ class WP_Kontext_Gen_Admin {
         $wpdb->query("TRUNCATE TABLE $table_name");
         
         wp_send_json_success(array('message' => __('History cleared successfully', 'wp-kontext-gen')));
+    }
+    
+    /**
+     * Handle save to media library request via AJAX
+     */
+    public function handle_save_to_media_library() {
+        check_ajax_referer('wp_kontext_gen_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Unauthorized', 'wp-kontext-gen'));
+        }
+        
+        if (empty($_POST['image_url'])) {
+            wp_send_json_error(array('message' => __('Image URL is required', 'wp-kontext-gen')));
+        }
+        
+        $image_url = esc_url_raw($_POST['image_url']);
+        $title = sanitize_text_field($_POST['title'] ?? 'Kontext Generated Image');
+        
+        $result = $this->api->save_to_media_library($image_url, $title);
+        
+        if (is_wp_error($result)) {
+            wp_send_json_error(array('message' => $result->get_error_message()));
+        }
+        
+        wp_send_json_success(array(
+            'message' => __('Image saved to media library successfully', 'wp-kontext-gen'),
+            'attachment_id' => $result['id'],
+            'url' => $result['url']
+        ));
+    }
+    
+    /**
+     * Get total cost for current user
+     */
+    public function get_total_cost() {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'kontext_gen_history';
+        
+        $total = $wpdb->get_var($wpdb->prepare(
+            "SELECT SUM(cost_usd) FROM $table_name WHERE user_id = %d AND cost_usd IS NOT NULL",
+            get_current_user_id()
+        ));
+        
+        return floatval($total);
     }
 }

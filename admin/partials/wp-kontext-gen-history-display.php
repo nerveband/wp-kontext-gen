@@ -33,10 +33,20 @@ $history_items = $wpdb->get_results($wpdb->prepare(
     $per_page,
     $offset
 ));
+
+// Get total cost for current user
+$admin = new WP_Kontext_Gen_Admin('wp-kontext-gen', WP_KONTEXT_GEN_VERSION);
+$total_cost = $admin->get_total_cost();
 ?>
 
 <div class="wrap">
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
+    
+    <?php if ($total_cost > 0) : ?>
+        <div class="notice notice-info">
+            <p><strong><?php _e('Total API Cost:', 'wp-kontext-gen'); ?></strong> $<?php echo number_format($total_cost, 4); ?> USD</p>
+        </div>
+    <?php endif; ?>
     
     <?php if (!empty($history_items)) : ?>
         <div class="tablenav top">
@@ -55,8 +65,9 @@ $history_items = $wpdb->get_results($wpdb->prepare(
                     <th style="width: 150px;"><?php _e('Preview', 'wp-kontext-gen'); ?></th>
                     <th><?php _e('Prompt', 'wp-kontext-gen'); ?></th>
                     <th style="width: 100px;"><?php _e('Status', 'wp-kontext-gen'); ?></th>
+                    <th style="width: 80px;"><?php _e('Cost', 'wp-kontext-gen'); ?></th>
                     <th style="width: 150px;"><?php _e('Date', 'wp-kontext-gen'); ?></th>
-                    <th style="width: 100px;"><?php _e('Actions', 'wp-kontext-gen'); ?></th>
+                    <th style="width: 140px;"><?php _e('Actions', 'wp-kontext-gen'); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -95,22 +106,40 @@ $history_items = $wpdb->get_results($wpdb->prepare(
                         <td>
                             <?php
                             $status_class = '';
+                            $status_text = '';
                             switch ($item->status) {
                                 case 'succeeded':
                                     $status_class = 'success';
+                                    $status_text = __('Completed', 'wp-kontext-gen');
                                     break;
                                 case 'failed':
                                     $status_class = 'error';
+                                    $status_text = __('Failed', 'wp-kontext-gen');
                                     break;
                                 case 'processing':
+                                    $status_class = 'warning';
+                                    $status_text = __('Processing', 'wp-kontext-gen');
+                                    break;
                                 case 'starting':
                                     $status_class = 'warning';
+                                    $status_text = __('Starting', 'wp-kontext-gen');
+                                    break;
+                                default:
+                                    $status_class = 'warning';
+                                    $status_text = ucfirst($item->status);
                                     break;
                             }
                             ?>
                             <span class="status-badge status-<?php echo $status_class; ?>">
-                                <?php echo ucfirst($item->status); ?>
+                                <?php echo $status_text; ?>
                             </span>
+                        </td>
+                        <td>
+                            <?php if ($item->cost_usd > 0) : ?>
+                                <span class="cost-display">$<?php echo number_format($item->cost_usd, 4); ?></span>
+                            <?php else : ?>
+                                <span class="cost-display">-</span>
+                            <?php endif; ?>
                         </td>
                         <td>
                             <?php echo date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($item->created_at)); ?>
@@ -120,6 +149,13 @@ $history_items = $wpdb->get_results($wpdb->prepare(
                                 <a href="<?php echo esc_url($item->output_image_url); ?>" class="button button-small" target="_blank">
                                     <?php _e('View', 'wp-kontext-gen'); ?>
                                 </a>
+                                <?php if (!$item->attachment_id) : ?>
+                                    <button type="button" class="button button-small save-to-media-btn" 
+                                            data-url="<?php echo esc_attr($item->output_image_url); ?>" 
+                                            data-title="<?php echo esc_attr(substr($item->prompt, 0, 50) . '...'); ?>">
+                                        <?php _e('Save to Media', 'wp-kontext-gen'); ?>
+                                    </button>
+                                <?php endif; ?>
                             <?php endif; ?>
                             <?php if ($item->attachment_id) : ?>
                                 <a href="<?php echo admin_url('post.php?post=' . $item->attachment_id . '&action=edit'); ?>" class="button button-small">
