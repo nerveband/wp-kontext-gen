@@ -31,10 +31,32 @@ if ($remember_last) {
 if (empty($default_image)) {
     $default_image = get_option('wp_kontext_gen_default_image', '');
 }
+
+// Get current model and last prompt
+$current_model = get_option('wp_kontext_gen_model', 'dev');
+$last_prompt = get_option('wp_kontext_gen_last_prompt', '');
 ?>
 
 <div class="wrap">
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
+    
+    <div class="current-model-info">
+        <p><strong><?php _e('Current Model:', 'wp-kontext-gen'); ?></strong> 
+        <?php
+        switch ($current_model) {
+            case 'pro':
+                echo 'FLUX.1 Kontext [pro]';
+                break;
+            case 'max':
+                echo 'FLUX.1 Kontext [max]';
+                break;
+            default:
+                echo 'FLUX.1 Kontext [dev]';
+                break;
+        }
+        ?>
+        </p>
+    </div>
     
     <div class="wp-kontext-gen-container">
         <div class="wp-kontext-gen-form-wrapper">
@@ -44,8 +66,23 @@ if (empty($default_image)) {
                 <!-- Prompt -->
                 <div class="form-group">
                     <label for="prompt"><?php _e('Prompt (Required)', 'wp-kontext-gen'); ?></label>
-                    <textarea id="prompt" name="prompt" rows="4" class="large-text" placeholder="<?php _e('e.g., Change the car color to red, turn the headlights on', 'wp-kontext-gen'); ?>" required></textarea>
-                    <p class="description"><?php _e('Text description of what you want to generate, or the instruction on how to edit the given image.', 'wp-kontext-gen'); ?></p>
+                    <div class="prompt-wrapper">
+                        <textarea id="prompt" name="prompt" rows="4" class="large-text" placeholder="<?php _e('e.g., Change the car color to red, turn the headlights on', 'wp-kontext-gen'); ?>" required><?php echo esc_textarea($last_prompt); ?></textarea>
+                        <?php if (!empty($last_prompt)) : ?>
+                            <button type="button" class="button button-small clear-prompt-btn" style="margin-top: 5px;">
+                                <?php _e('Clear Prompt', 'wp-kontext-gen'); ?>
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                    <div class="prompt-tips">
+                        <h4><?php _e('💡 Prompting Tips:', 'wp-kontext-gen'); ?></h4>
+                        <ul>
+                            <li><strong><?php _e('Be Specific:', 'wp-kontext-gen'); ?></strong> <?php _e('Use clear, detailed language with exact colors and descriptions', 'wp-kontext-gen'); ?></li>
+                            <li><strong><?php _e('Preserve Intentionally:', 'wp-kontext-gen'); ?></strong> <?php _e('Specify what should stay the same: "while keeping the same facial features"', 'wp-kontext-gen'); ?></li>
+                            <li><strong><?php _e('Text Editing:', 'wp-kontext-gen'); ?></strong> <?php _e('Use quotation marks: "replace \'old text\' with \'new text\'"', 'wp-kontext-gen'); ?></li>
+                            <li><strong><?php _e('Style Transfer:', 'wp-kontext-gen'); ?></strong> <?php _e('Be specific about artistic styles: "impressionist painting" not "artistic"', 'wp-kontext-gen'); ?></li>
+                        </ul>
+                    </div>
                 </div>
                 
                 <!-- Input Image -->

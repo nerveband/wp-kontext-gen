@@ -87,6 +87,63 @@
             mediaUploader.open();
         });
         
+        // Clear prompt button
+        $('.clear-prompt-btn').on('click', function() {
+            $('#prompt').val('');
+            $(this).hide();
+        });
+        
+        // View changelog
+        $('#view-changelog').on('click', function() {
+            $('#changelog-modal').show();
+            loadChangelog();
+        });
+        
+        // Close changelog modal
+        $('.changelog-close, #changelog-modal').on('click', function(e) {
+            if (e.target === this) {
+                $('#changelog-modal').hide();
+            }
+        });
+        
+        // Check for updates
+        $('#check-updates').on('click', function() {
+            let button = $(this);
+            let statusDiv = $('#update-status');
+            
+            button.prop('disabled', true).find('.dashicons').addClass('dashicons-update-alt');
+            statusDiv.html('<div class="notice notice-info inline"><p>Checking for updates...</p></div>');
+            
+            $.ajax({
+                url: wpKontextGen.ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'wp_kontext_gen_check_updates',
+                    nonce: wpKontextGen.nonce
+                },
+                success: function(response) {
+                    button.prop('disabled', false).find('.dashicons').removeClass('dashicons-update-alt');
+                    
+                    if (response.success) {
+                        if (response.data.update_available) {
+                            statusDiv.html(
+                                '<div class="notice notice-warning inline"><p><strong>Update Available:</strong> Version ' + 
+                                response.data.latest_version + ' is available. <a href="' + wpKontextGen.adminUrl + 'plugins.php">Update now</a></p></div>'
+                            );
+                        } else {
+                            statusDiv.html('<div class="notice notice-success inline"><p>You have the latest version!</p></div>');
+                        }
+                    } else {
+                        statusDiv.html('<div class="notice notice-error inline"><p>Unable to check for updates. Please try again later.</p></div>');
+                    }
+                },
+                error: function() {
+                    button.prop('disabled', false).find('.dashicons').removeClass('dashicons-update-alt');
+                    statusDiv.html('<div class="notice notice-error inline"><p>Error checking for updates. Please try again later.</p></div>');
+                }
+            });
+        });
+        
         // Delete history item
         $('.delete-history-item').on('click', function() {
             if (!confirm(wpKontextGen.strings.delete_confirm)) {
@@ -374,5 +431,34 @@
         link.click();
         document.body.removeChild(link);
     };
+    
+    // Load changelog from GitHub
+    function loadChangelog() {
+        let body = $('.changelog-body');
+        body.html('<div class="loading">Loading changelog...</div>');
+        
+        fetch('https://api.github.com/repos/nerveband/wp-kontext-gen/releases')
+            .then(response => response.json())
+            .then(releases => {
+                let html = '';
+                releases.slice(0, 5).forEach(release => {
+                    let version = release.tag_name;
+                    let date = new Date(release.published_at).toLocaleDateString();
+                    let body = release.body || 'No release notes available.';
+                    
+                    html += `
+                        <div class="changelog-version">
+                            <h4>Version ${version} <small>(${date})</small></h4>
+                            <div class="changelog-notes">${body}</div>
+                        </div>
+                    `;
+                });
+                
+                body.html(html);
+            })
+            .catch(error => {
+                body.html('<div class="error">Failed to load changelog. Please check our <a href="https://github.com/nerveband/wp-kontext-gen/releases" target="_blank">GitHub releases</a> page.</div>');
+            });
+    }
 
 })(jQuery);

@@ -15,6 +15,22 @@ class WP_Kontext_Gen_API {
     }
     
     /**
+     * Get the selected model
+     */
+    private function get_selected_model() {
+        $model = get_option('wp_kontext_gen_model', 'dev');
+        
+        switch ($model) {
+            case 'pro':
+                return 'black-forest-labs/flux-kontext-pro';
+            case 'max':
+                return 'black-forest-labs/flux-kontext-max';
+            default:
+                return 'black-forest-labs/flux-kontext-dev';
+        }
+    }
+    
+    /**
      * Get the latest model version
      */
     private function get_model_version() {
@@ -23,7 +39,8 @@ class WP_Kontext_Gen_API {
             return $cached_version;
         }
         
-        $response = wp_remote_get('https://api.replicate.com/v1/models/black-forest-labs/flux-kontext-dev', array(
+        $model = $this->get_selected_model();
+        $response = wp_remote_get('https://api.replicate.com/v1/models/' . $model, array(
             'headers' => array(
                 'Authorization' => 'Bearer ' . $this->api_key,
             )
@@ -196,7 +213,8 @@ class WP_Kontext_Gen_API {
             return false;
         }
         
-        $response = wp_remote_get('https://api.replicate.com/v1/models/black-forest-labs/flux-kontext-dev', array(
+        $model = $this->get_selected_model();
+        $response = wp_remote_get('https://api.replicate.com/v1/models/' . $model, array(
             'headers' => array(
                 'Authorization' => 'Bearer ' . $api_key,
             ),

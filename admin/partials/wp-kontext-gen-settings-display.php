@@ -35,6 +35,10 @@ if (isset($_POST['submit'])) {
     $remember_last = isset($_POST['wp_kontext_gen_remember_last_image']) ? 1 : 0;
     update_option('wp_kontext_gen_remember_last_image', $remember_last);
     
+    // Save model selection
+    $model = isset($_POST['wp_kontext_gen_model']) ? sanitize_text_field($_POST['wp_kontext_gen_model']) : 'dev';
+    update_option('wp_kontext_gen_model', $model);
+    
     if ($is_valid) {
         echo '<div class="notice notice-success"><p>' . __('Settings saved successfully. API key is valid!', 'wp-kontext-gen') . '</p></div>';
     } else {
@@ -47,6 +51,7 @@ $api_key = get_option('wp_kontext_gen_api_key', '');
 $defaults = get_option('wp_kontext_gen_default_params', array());
 $default_image = get_option('wp_kontext_gen_default_image', '');
 $remember_last = get_option('wp_kontext_gen_remember_last_image', 1); // Default to enabled
+$current_model = get_option('wp_kontext_gen_model', 'dev');
 ?>
 
 <div class="wrap">
@@ -65,6 +70,38 @@ $remember_last = get_option('wp_kontext_gen_remember_last_image', 1); // Default
                     <p class="description">
                         <?php _e('Get your API key from', 'wp-kontext-gen'); ?> 
                         <a href="https://replicate.com/account/api-tokens" target="_blank">Replicate Account</a>
+                    </p>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row">
+                    <label for="wp_kontext_gen_model"><?php _e('FLUX.1 Kontext Model', 'wp-kontext-gen'); ?></label>
+                </th>
+                <td>
+                    <select id="wp_kontext_gen_model" name="wp_kontext_gen_model">
+                        <option value="dev" <?php selected($current_model, 'dev'); ?>><?php _e('FLUX.1 Kontext [dev] - Open-weight, non-commercial', 'wp-kontext-gen'); ?></option>
+                        <option value="pro" <?php selected($current_model, 'pro'); ?>><?php _e('FLUX.1 Kontext [pro] - High-quality, commercial use', 'wp-kontext-gen'); ?></option>
+                        <option value="max" <?php selected($current_model, 'max'); ?>><?php _e('FLUX.1 Kontext [max] - Premium, best performance', 'wp-kontext-gen'); ?></option>
+                    </select>
+                    <p class="description">
+                        <?php _e('Select which FLUX.1 Kontext model to use. Pro and Max models require paid plans.', 'wp-kontext-gen'); ?><br>
+                        <strong><?php _e('Current Model:', 'wp-kontext-gen'); ?></strong> 
+                        <span class="current-model-display">
+                            <?php
+                            switch ($current_model) {
+                                case 'pro':
+                                    echo 'FLUX.1 Kontext [pro]';
+                                    break;
+                                case 'max':
+                                    echo 'FLUX.1 Kontext [max]';
+                                    break;
+                                default:
+                                    echo 'FLUX.1 Kontext [dev]';
+                                    break;
+                            }
+                            ?>
+                        </span>
                     </p>
                 </td>
             </tr>
@@ -171,6 +208,71 @@ $remember_last = get_option('wp_kontext_gen_remember_last_image', 1); // Default
         
         <?php submit_button(); ?>
     </form>
+    
+    <div class="wp-kontext-gen-attribution">
+        <h2><?php _e('Plugin Information', 'wp-kontext-gen'); ?></h2>
+        <div class="attribution-content">
+            <div class="attribution-section">
+                <h4><?php _e('Developer', 'wp-kontext-gen'); ?></h4>
+                <p><?php _e('Created by', 'wp-kontext-gen'); ?> <strong>Ashraf Ali</strong></p>
+                <p>
+                    <a href="https://github.com/nerveband/wp-kontext-gen" target="_blank" class="button button-secondary">
+                        <span class="dashicons dashicons-admin-links"></span>
+                        <?php _e('View on GitHub', 'wp-kontext-gen'); ?>
+                    </a>
+                    <button type="button" class="button button-secondary" id="view-changelog">
+                        <span class="dashicons dashicons-list-view"></span>
+                        <?php _e('View Changelog', 'wp-kontext-gen'); ?>
+                    </button>
+                </p>
+            </div>
+            
+            <div class="attribution-section">
+                <h4><?php _e('Support & Issues', 'wp-kontext-gen'); ?></h4>
+                <p><?php _e('Report bugs or request features on our GitHub repository.', 'wp-kontext-gen'); ?></p>
+                <p>
+                    <a href="https://github.com/nerveband/wp-kontext-gen/issues" target="_blank" class="button button-secondary">
+                        <span class="dashicons dashicons-sos"></span>
+                        <?php _e('Report Issue', 'wp-kontext-gen'); ?>
+                    </a>
+                </p>
+            </div>
+        </div>
+        
+        <div class="attribution-content" style="margin-top: 20px;">
+            <div class="attribution-section">
+                <h4><?php _e('Plugin Updates', 'wp-kontext-gen'); ?></h4>
+                <p><strong><?php _e('Current Version:', 'wp-kontext-gen'); ?></strong> v<?php echo WP_KONTEXT_GEN_VERSION; ?></p>
+                <div id="update-status"></div>
+                <p>
+                    <button type="button" class="button button-secondary" id="check-updates">
+                        <span class="dashicons dashicons-update"></span>
+                        <?php _e('Check for Updates', 'wp-kontext-gen'); ?>
+                    </button>
+                    <a href="<?php echo admin_url('plugins.php'); ?>" class="button button-secondary">
+                        <span class="dashicons dashicons-admin-plugins"></span>
+                        <?php _e('Manage Plugins', 'wp-kontext-gen'); ?>
+                    </a>
+                </p>
+                <p class="description">
+                    <?php _e('Updates are automatically detected. You can also manually check for updates or manage the plugin in the WordPress Plugins page.', 'wp-kontext-gen'); ?>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Changelog Modal -->
+    <div id="changelog-modal" style="display: none;">
+        <div class="changelog-content">
+            <div class="changelog-header">
+                <h3><?php _e('WP Kontext Gen Changelog', 'wp-kontext-gen'); ?></h3>
+                <button type="button" class="changelog-close">&times;</button>
+            </div>
+            <div class="changelog-body">
+                <div class="loading"><?php _e('Loading changelog...', 'wp-kontext-gen'); ?></div>
+            </div>
+        </div>
+    </div>
     
     <div class="wp-kontext-gen-info">
         <h2><?php _e('About FLUX.1 Kontext [dev]', 'wp-kontext-gen'); ?></h2>

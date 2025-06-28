@@ -85,6 +85,10 @@ class WP_Kontext_Gen_Admin {
         register_setting('wp_kontext_gen_settings', 'wp_kontext_gen_remember_last_image', array(
             'sanitize_callback' => 'absint',
         ));
+        
+        register_setting('wp_kontext_gen_settings', 'wp_kontext_gen_model', array(
+            'sanitize_callback' => 'sanitize_text_field',
+        ));
     }
     
     /**
@@ -247,6 +251,9 @@ class WP_Kontext_Gen_Admin {
         if (get_option('wp_kontext_gen_remember_last_image') && !empty($params['input_image'])) {
             update_option('wp_kontext_gen_last_image', $params['input_image']);
         }
+        
+        // Always save last prompt
+        update_option('wp_kontext_gen_last_prompt', $params['prompt']);
         
         wp_send_json_success($result);
     }
@@ -452,5 +459,58 @@ class WP_Kontext_Gen_Admin {
         ));
         
         return floatval($total);
+    }
+    
+    /**
+     * Handle check updates request via AJAX
+     */
+    public function handle_check_updates() {
+        check_ajax_referer('wp_kontext_gen_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Unauthorized', 'wp-kontext-gen'));
+        }
+        
+        // Clear cached version data to force fresh check
+        delete_transient('wp_kontext_gen_remote_version');
+        delete_transient('wp_kontext_gen_remote_info');
+        
+        // Get current and remote versions
+        $current_version = WP_KONTEXT_GEN_VERSION;
+        $remote_version = $this->get_remote_version();
+        
+        if (!$remote_version) {
+            wp_send_json_error(array('message' => __('Unable to check for updates at this time.', 'wp-kontext-gen')));
+        }
+        
+        $update_available = version_compare($current_version, $remote_version, '<');
+        
+        wp_send_json_success(array(
+            'update_available' => $update_available,
+            'current_version' => $current_version,
+            'latest_version' => $remote_version,
+            'message' => $update_available ? 
+                sprintf(__('Update available: v%s', 'wp-kontext-gen'), $remote_version) : 
+                __('You have the latest version!', 'wp-kontext-gen')
+        ));
+    }
+    
+    /**
+     * Get remote version from GitHub
+     */
+    private function get_remote_version() {
+        $response = wp_remote_get('https://api.github.com/repos/nerveband/wp-kontext-gen/releases/latest', array(
+            'timeout' => 10,
+            'headers' => array(
+                'Accept' => 'application/vnd.github.v3+json',
+            ),
+        ));
+        
+        if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+            return false;
+        }
+        
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        return isset($body['tag_name']) ? ltrim($body['tag_name'], 'v') : false;
     }
 }
