@@ -45,6 +45,7 @@ class WP_Kontext_Gen {
         $this->loader->add_action('wp_ajax_wp_kontext_gen_refresh_recent_generations', $plugin_admin, 'handle_refresh_recent_generations');
         $this->loader->add_action('wp_ajax_wp_kontext_gen_debug_database', $plugin_admin, 'handle_debug_database');
         $this->loader->add_action('wp_ajax_wp_kontext_gen_test_database_insert', $plugin_admin, 'handle_test_database_insert');
+        $this->loader->add_action('wp_ajax_wp_kontext_gen_migrate_database', $plugin_admin, 'handle_migrate_database');
         
         // Settings
         $this->loader->add_action('admin_init', $plugin_admin, 'register_settings');

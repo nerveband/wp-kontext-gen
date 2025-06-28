@@ -279,6 +279,42 @@
             });
         });
         
+        // Migrate database
+        $('#migrate-database').on('click', function() {
+            let button = $(this);
+            let statusDiv = $('#debug-status');
+            
+            button.prop('disabled', true).find('.dashicons').addClass('dashicons-update-alt');
+            statusDiv.html('<div class="notice notice-info inline"><p>Migrating database structure...</p></div>');
+            
+            $.ajax({
+                url: wpKontextGen.ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'wp_kontext_gen_migrate_database',
+                    nonce: wpKontextGen.nonce
+                },
+                success: function(response) {
+                    button.prop('disabled', false).find('.dashicons').removeClass('dashicons-update-alt');
+                    
+                    if (response.success) {
+                        let html = '<div class="notice notice-success inline">';
+                        html += '<p><strong>Migration Result:</strong> ' + response.data.message + '</p>';
+                        html += '<p><strong>Current Columns:</strong> ' + response.data.columns.join(', ') + '</p>';
+                        html += '<p><em>Now try "Test Database Insert" again!</em></p>';
+                        html += '</div>';
+                        statusDiv.html(html);
+                    } else {
+                        statusDiv.html('<div class="notice notice-error inline"><p>Migration failed: ' + (response.data.message || 'Unknown error') + '</p></div>');
+                    }
+                },
+                error: function() {
+                    button.prop('disabled', false).find('.dashicons').removeClass('dashicons-update-alt');
+                    statusDiv.html('<div class="notice notice-error inline"><p>Error running database migration.</p></div>');
+                }
+            });
+        });
+        
         // Delete history item
         $('.delete-history-item').on('click', function() {
             if (!confirm(wpKontextGen.strings.delete_confirm)) {

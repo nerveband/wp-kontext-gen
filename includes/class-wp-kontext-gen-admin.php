@@ -303,15 +303,8 @@ class WP_Kontext_Gen_Admin {
         // Custom logging function that works regardless of WP_DEBUG
         $this->log_debug("Starting save_to_history function");
         
-        // Check if table exists first
-        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
-        if (!$table_exists) {
-            $this->log_debug("History table $table_name does not exist");
-            // Try to create the table
-            $this->create_history_table();
-        } else {
-            $this->log_debug("History table $table_name exists");
-        }
+        // Ensure database schema is up to date
+        $this->migrate_database();
         
         $insert_data = array(
             'user_id' => get_current_user_id(),
@@ -379,7 +372,76 @@ class WP_Kontext_Gen_Admin {
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         $result = dbDelta($sql);
-        error_log("WP Kontext Gen: Created history table with result: " . print_r($result, true));
+        $this->log_debug("Created history table with result: " . print_r($result, true));
+        
+        // Update database version
+        update_option('wp_kontext_gen_db_version', '1.2.5');
+    }
+    
+    /**
+     * Migrate database structure if needed
+     */
+    private function migrate_database() {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'kontext_gen_history';
+        
+        $current_db_version = get_option('wp_kontext_gen_db_version', '1.0.0');
+        $plugin_version = WP_KONTEXT_GEN_VERSION;
+        
+        $this->log_debug("Checking database migration. Current DB version: $current_db_version, Plugin version: $plugin_version");
+        
+        // Check if table exists
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
+        if (!$table_exists) {
+            $this->log_debug("Table doesn't exist, creating new table");
+            $this->create_history_table();
+            return;
+        }
+        
+        // Check if prediction_id column exists
+        $columns = $wpdb->get_results("DESCRIBE $table_name");
+        $has_prediction_id = false;
+        foreach ($columns as $column) {
+            if ($column->Field === 'prediction_id') {
+                $has_prediction_id = true;
+                break;
+            }
+        }
+        
+        if (!$has_prediction_id) {
+            $this->log_debug("Missing prediction_id column, adding it");
+            $sql = "ALTER TABLE $table_name ADD COLUMN prediction_id varchar(255) AFTER cost_usd";
+            $result = $wpdb->query($sql);
+            if ($result === false) {
+                $this->log_debug("Failed to add prediction_id column: " . $wpdb->last_error);
+            } else {
+                $this->log_debug("Successfully added prediction_id column");
+                update_option('wp_kontext_gen_db_version', '1.2.5');
+            }
+        }
+        
+        // Check if created_at column exists
+        $has_created_at = false;
+        foreach ($columns as $column) {
+            if ($column->Field === 'created_at') {
+                $has_created_at = true;
+                break;
+            }
+        }
+        
+        if (!$has_created_at) {
+            $this->log_debug("Missing created_at column, adding it");
+            $sql = "ALTER TABLE $table_name ADD COLUMN created_at datetime DEFAULT CURRENT_TIMESTAMP AFTER prediction_id";
+            $result = $wpdb->query($sql);
+            if ($result === false) {
+                $this->log_debug("Failed to add created_at column: " . $wpdb->last_error);
+            } else {
+                $this->log_debug("Successfully added created_at column");
+                update_option('wp_kontext_gen_db_version', '1.2.5');
+            }
+        }
+        
+        $this->log_debug("Database migration completed");
     }
     
     /**
@@ -802,6 +864,39 @@ class WP_Kontext_Gen_Admin {
         wp_send_json_success(array(
             'test_records_created' => intval($count),
             'message' => sprintf(__('Test insert completed. %d test records found.', 'wp-kontext-gen'), $count)
+        ));
+    }
+    
+    /**
+     * Handle manual database migration via AJAX
+     */
+    public function handle_migrate_database() {
+        check_ajax_referer('wp_kontext_gen_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Unauthorized', 'wp-kontext-gen'));
+        }
+        
+        $this->log_debug("Starting manual database migration");
+        
+        // Run migration
+        $this->migrate_database();
+        
+        // Check table structure after migration
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'kontext_gen_history';
+        $columns = $wpdb->get_results("DESCRIBE $table_name");
+        
+        $column_names = array();
+        foreach ($columns as $column) {
+            $column_names[] = $column->Field;
+        }
+        
+        $this->log_debug("Migration completed. Current columns: " . implode(', ', $column_names));
+        
+        wp_send_json_success(array(
+            'columns' => $column_names,
+            'message' => sprintf(__('Database migration completed. Table now has %d columns.', 'wp-kontext-gen'), count($column_names))
         ));
     }
 }
