@@ -273,20 +273,29 @@ $last_prompt = get_option('wp_kontext_gen_last_prompt', '');
 </div>
 
 <style>
+/* Base responsive container */
+.wrap {
+    max-width: none !important;
+}
+
 .wp-kontext-gen-container {
     display: flex;
-    gap: 30px;
-    max-width: 1400px;
+    gap: 20px;
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .wp-kontext-gen-main-content {
     flex: 1;
     min-width: 0; /* Prevents flex item from overflowing */
+    max-width: calc(100% - 370px); /* Ensure it doesn't overflow */
 }
 
 .wp-kontext-gen-sidebar {
-    flex: 0 0 350px; /* Fixed width sidebar */
-    min-width: 350px;
+    flex: 0 0 300px; /* Smaller fixed width sidebar */
+    min-width: 300px;
+    max-width: 300px;
 }
 
 .wp-kontext-gen-recent {
@@ -432,37 +441,121 @@ $last_prompt = get_option('wp_kontext_gen_last_prompt', '');
     font-size: 16px;
 }
 
-/* Responsive design */
-@media (max-width: 1200px) {
+/* WordPress admin responsive adjustments */
+@media screen and (max-width: 1400px) {
     .wp-kontext-gen-container {
         flex-direction: column;
+        gap: 20px;
+    }
+    
+    .wp-kontext-gen-main-content {
+        max-width: 100%;
     }
     
     .wp-kontext-gen-sidebar {
         flex: none;
         min-width: auto;
+        max-width: 100%;
+        width: 100%;
     }
     
     .wp-kontext-gen-recent {
         position: static;
         max-height: none;
-        margin-top: 30px;
+        margin: 0;
     }
     
     .recent-generations-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
         gap: 15px;
     }
     
+    .recent-item {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+    }
+    
     .recent-item-image {
-        height: 120px;
+        flex: 0 0 120px;
+        height: 80px;
+        margin-right: 15px;
+    }
+    
+    .recent-item-info {
+        flex: 1;
+        padding: 12px 12px 12px 0;
     }
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 900px) {
     .recent-generations-grid {
         grid-template-columns: 1fr;
+    }
+    
+    .recent-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .recent-item-image {
+        flex: none;
+        height: 120px;
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+    
+    .recent-item-info {
+        padding: 12px;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    .wp-kontext-gen-container {
+        gap: 15px;
+    }
+    
+    .wp-kontext-gen-recent {
+        padding: 15px;
+    }
+    
+    .recent-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+    
+    .recent-header h2 {
+        margin-bottom: 0;
+        font-size: 16px;
+    }
+}
+
+/* Override for WordPress admin constraints */
+@media screen and (max-width: 1600px) {
+    .wp-kontext-gen-container {
+        flex-direction: column !important;
+    }
+    
+    .wp-kontext-gen-sidebar {
+        min-width: auto !important;
+        max-width: 100% !important;
+    }
+    
+    .wp-kontext-gen-main-content {
+        max-width: 100% !important;
+    }
+}
+
+/* Ensure it works in WordPress admin mobile view */
+@media screen and (max-width: 782px) {
+    .wp-kontext-gen-container {
+        padding: 0 10px;
+    }
+    
+    .recent-item-image {
+        height: 100px !important;
     }
 }
 </style>

@@ -3,7 +3,7 @@
  * Plugin Name: WP Kontext Gen
  * Plugin URI: https://github.com/nerveband/wp-kontext-gen
  * Description: Generate and edit images using Replicate's FLUX.1 Kontext [dev] model
- * Version: 1.2.8
+ * Version: 1.2.9
  * Author: Nerveband
  * License: GPL v2 or later
  * Text Domain: wp-kontext-gen
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('WP_KONTEXT_GEN_VERSION', '1.2.8');
+define('WP_KONTEXT_GEN_VERSION', '1.2.9');
 define('WP_KONTEXT_GEN_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('WP_KONTEXT_GEN_PLUGIN_PATH', plugin_dir_path(__FILE__));
 define('WP_KONTEXT_GEN_REPLICATE_API_URL', 'https://api.replicate.com/v1/predictions');
