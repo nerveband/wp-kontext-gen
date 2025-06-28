@@ -410,13 +410,13 @@ class WP_Kontext_Gen_Admin {
         
         if (!$has_prediction_id) {
             $this->log_debug("Missing prediction_id column, adding it");
-            $sql = "ALTER TABLE $table_name ADD COLUMN prediction_id varchar(255) AFTER cost_usd";
+            $sql = "ALTER TABLE $table_name ADD COLUMN prediction_id varchar(255) AFTER status";
             $result = $wpdb->query($sql);
             if ($result === false) {
                 $this->log_debug("Failed to add prediction_id column: " . $wpdb->last_error);
             } else {
                 $this->log_debug("Successfully added prediction_id column");
-                update_option('wp_kontext_gen_db_version', '1.2.5');
+                update_option('wp_kontext_gen_db_version', '1.2.6');
             }
         }
         
@@ -437,7 +437,7 @@ class WP_Kontext_Gen_Admin {
                 $this->log_debug("Failed to add created_at column: " . $wpdb->last_error);
             } else {
                 $this->log_debug("Successfully added created_at column");
-                update_option('wp_kontext_gen_db_version', '1.2.5');
+                update_option('wp_kontext_gen_db_version', '1.2.6');
             }
         }
         
