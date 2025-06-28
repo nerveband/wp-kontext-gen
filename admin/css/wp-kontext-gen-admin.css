@@ -1,0 +1,169 @@
+/**
+ * WP Kontext Gen Admin Styles
+ */
+
+.wp-kontext-gen-container {
+    display: flex;
+    gap: 30px;
+    margin-top: 20px;
+}
+
+.wp-kontext-gen-form-wrapper {
+    flex: 1;
+    max-width: 600px;
+}
+
+.wp-kontext-gen-results {
+    flex: 1;
+    max-width: 600px;
+}
+
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.form-group textarea,
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group select {
+    width: 100%;
+}
+
+.form-group .description {
+    margin-top: 5px;
+    color: #666;
+    font-size: 13px;
+}
+
+.form-field {
+    margin-bottom: 15px;
+}
+
+.form-field label {
+    display: inline-block;
+    width: 150px;
+    font-weight: 600;
+}
+
+.form-field input[type="number"],
+.form-field select {
+    width: 200px;
+}
+
+.image-upload-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.image-preview {
+    max-width: 300px;
+    margin-bottom: 10px;
+}
+
+.image-preview img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+#generation-status {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    display: none;
+}
+
+#generation-status.notice-info {
+    background: #d1ecf1;
+    border: 1px solid #bee5eb;
+    color: #0c5460;
+}
+
+#generation-status.notice-success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+#generation-status.notice-error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.generation-progress {
+    margin-top: 10px;
+}
+
+.generation-progress .progress-bar {
+    width: 100%;
+    height: 20px;
+    background: #f0f0f0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.generation-progress .progress-fill {
+    height: 100%;
+    background: #0073aa;
+    transition: width 0.3s ease;
+}
+
+#generation-result {
+    text-align: center;
+}
+
+#generation-result img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.result-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 15px;
+}
+
+.wp-kontext-gen-info {
+    margin-top: 50px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.wp-kontext-gen-info h2 {
+    margin-top: 0;
+}
+
+.wp-kontext-gen-info ul {
+    list-style: disc;
+    margin-left: 20px;
+}
+
+.wp-kontext-gen-info li {
+    margin-bottom: 8px;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .wp-kontext-gen-container {
+        flex-direction: column;
+    }
+    
+    .wp-kontext-gen-form-wrapper,
+    .wp-kontext-gen-results {
+        max-width: 100%;
+    }
+}
