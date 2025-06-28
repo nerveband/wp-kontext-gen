@@ -249,6 +249,10 @@ $current_model = get_option('wp_kontext_gen_model', 'dev');
                         <span class="dashicons dashicons-update"></span>
                         <?php _e('Check for Updates', 'wp-kontext-gen'); ?>
                     </button>
+                    <button type="button" class="button button-secondary" id="force-update-check">
+                        <span class="dashicons dashicons-update-alt"></span>
+                        <?php _e('Force WordPress Update Check', 'wp-kontext-gen'); ?>
+                    </button>
                     <a href="<?php echo admin_url('plugins.php'); ?>" class="button button-secondary">
                         <span class="dashicons dashicons-admin-plugins"></span>
                         <?php _e('Manage Plugins', 'wp-kontext-gen'); ?>

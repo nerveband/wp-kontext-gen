@@ -529,4 +529,44 @@ class WP_Kontext_Gen_Admin {
         $body = json_decode(wp_remote_retrieve_body($response), true);
         return isset($body['tag_name']) ? ltrim($body['tag_name'], 'v') : false;
     }
+    
+    /**
+     * Handle force update check request via AJAX
+     */
+    public function handle_force_update_check() {
+        check_ajax_referer('wp_kontext_gen_nonce', 'nonce');
+        
+        if (!current_user_can('update_plugins')) {
+            wp_die(__('Unauthorized', 'wp-kontext-gen'));
+        }
+        
+        // Clear all update transients
+        delete_transient('wp_kontext_gen_remote_version');
+        delete_transient('wp_kontext_gen_remote_info');
+        delete_site_transient('update_plugins');
+        
+        // Get current and remote versions
+        $current_version = WP_KONTEXT_GEN_VERSION;
+        $remote_version = $this->get_remote_version();
+        
+        if (!$remote_version) {
+            wp_send_json_error(array('message' => __('Unable to check for updates at this time.', 'wp-kontext-gen')));
+        }
+        
+        $update_available = version_compare($current_version, $remote_version, '<');
+        
+        // Force WordPress to check for plugin updates
+        wp_update_plugins();
+        
+        wp_send_json_success(array(
+            'update_available' => $update_available,
+            'current_version' => $current_version,
+            'latest_version' => $remote_version,
+            'plugin_slug' => plugin_basename(WP_KONTEXT_GEN_PLUGIN_PATH . 'wp-kontext-gen.php'),
+            'update_url' => admin_url('plugins.php'),
+            'message' => $update_available ? 
+                sprintf(__('Update available: v%s. Check your plugins page!', 'wp-kontext-gen'), $remote_version) : 
+                __('You have the latest version!', 'wp-kontext-gen')
+        ));
+    }
 }

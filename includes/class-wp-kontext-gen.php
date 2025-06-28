@@ -41,6 +41,7 @@ class WP_Kontext_Gen {
         $this->loader->add_action('wp_ajax_wp_kontext_gen_clear_history', $plugin_admin, 'handle_clear_history');
         $this->loader->add_action('wp_ajax_wp_kontext_gen_save_to_media_library', $plugin_admin, 'handle_save_to_media_library');
         $this->loader->add_action('wp_ajax_wp_kontext_gen_check_updates', $plugin_admin, 'handle_check_updates');
+        $this->loader->add_action('wp_ajax_wp_kontext_gen_force_update_check', $plugin_admin, 'handle_force_update_check');
         
         // Settings
         $this->loader->add_action('admin_init', $plugin_admin, 'register_settings');

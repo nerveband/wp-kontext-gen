@@ -144,6 +144,44 @@
             });
         });
         
+        // Force WordPress update check
+        $('#force-update-check').on('click', function() {
+            let button = $(this);
+            let statusDiv = $('#update-status');
+            
+            button.prop('disabled', true).find('.dashicons').addClass('dashicons-update-alt');
+            statusDiv.html('<div class="notice notice-info inline"><p>Forcing WordPress to check for plugin updates...</p></div>');
+            
+            $.ajax({
+                url: wpKontextGen.ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'wp_kontext_gen_force_update_check',
+                    nonce: wpKontextGen.nonce
+                },
+                success: function(response) {
+                    button.prop('disabled', false).find('.dashicons').removeClass('dashicons-update-alt');
+                    
+                    if (response.success) {
+                        if (response.data.update_available) {
+                            statusDiv.html(
+                                '<div class="notice notice-warning inline"><p><strong>Update Available:</strong> Version ' + 
+                                response.data.latest_version + ' is available. <a href="' + response.data.update_url + '">Go to Plugins page to update</a></p></div>'
+                            );
+                        } else {
+                            statusDiv.html('<div class="notice notice-success inline"><p>You have the latest version! WordPress update cache cleared.</p></div>');
+                        }
+                    } else {
+                        statusDiv.html('<div class="notice notice-error inline"><p>Unable to force update check. Please try again later.</p></div>');
+                    }
+                },
+                error: function() {
+                    button.prop('disabled', false).find('.dashicons').removeClass('dashicons-update-alt');
+                    statusDiv.html('<div class="notice notice-error inline"><p>Error forcing update check. Please try again later.</p></div>');
+                }
+            });
+        });
+        
         // Delete history item
         $('.delete-history-item').on('click', function() {
             if (!confirm(wpKontextGen.strings.delete_confirm)) {

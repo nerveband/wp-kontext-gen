@@ -23,6 +23,9 @@ class WP_Kontext_Gen_Updater {
         add_filter('pre_set_site_transient_update_plugins', array($this, 'check_for_updates'));
         add_filter('plugins_api', array($this, 'plugin_info'), 20, 3);
         add_filter('upgrader_pre_download', array($this, 'download_package'), 10, 3);
+        
+        // Force update check on admin_init for testing
+        add_action('admin_init', array($this, 'force_update_check'));
     }
     
     /**
@@ -30,6 +33,11 @@ class WP_Kontext_Gen_Updater {
      */
     public function check_for_updates($transient) {
         if (empty($transient->checked)) {
+            return $transient;
+        }
+        
+        // Make sure our plugin is in the checked list
+        if (!isset($transient->checked[$this->plugin_slug])) {
             return $transient;
         }
         
@@ -43,6 +51,9 @@ class WP_Kontext_Gen_Updater {
                 'new_version' => $remote_version,
                 'url' => $this->get_github_repo_url(),
                 'package' => $this->get_download_url($remote_version),
+                'tested' => '6.4',
+                'requires_php' => '7.2',
+                'compatibility' => new stdClass(),
             );
         }
         
@@ -89,7 +100,8 @@ class WP_Kontext_Gen_Updater {
      */
     public function download_package($reply, $package, $upgrader) {
         if (strpos($package, 'github.com/nerveband/wp-kontext-gen') !== false) {
-            return $upgrader->fs_connect(array(WP_CONTENT_DIR, WP_PLUGIN_DIR));
+            // Let WordPress handle the download normally
+            return $reply;
         }
         return $reply;
     }
@@ -245,5 +257,22 @@ class WP_Kontext_Gen_Updater {
         $changelog .= '</div>';
         
         return $changelog;
+    }
+    
+    /**
+     * Force update check (for testing)
+     */
+    public function force_update_check() {
+        // Only check once per admin session and only for administrators
+        if (!current_user_can('update_plugins') || get_transient('wp_kontext_gen_force_checked')) {
+            return;
+        }
+        
+        // Clear cached version to force fresh check
+        delete_transient('wp_kontext_gen_remote_version');
+        delete_site_transient('update_plugins');
+        
+        // Mark as checked for this session
+        set_transient('wp_kontext_gen_force_checked', true, 300); // 5 minutes
     }
 }
