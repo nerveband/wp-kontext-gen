@@ -182,6 +182,58 @@
             });
         });
         
+        // Debug database
+        $('#debug-database').on('click', function() {
+            let button = $(this);
+            let statusDiv = $('#debug-status');
+            
+            button.prop('disabled', true).find('.dashicons').addClass('dashicons-update-alt');
+            statusDiv.html('<div class="notice notice-info inline"><p>Checking database...</p></div>');
+            
+            $.ajax({
+                url: wpKontextGen.ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'wp_kontext_gen_debug_database',
+                    nonce: wpKontextGen.nonce
+                },
+                success: function(response) {
+                    button.prop('disabled', false).find('.dashicons').removeClass('dashicons-update-alt');
+                    
+                    if (response.success) {
+                        let debug = response.data.debug_info;
+                        let html = '<div class="notice notice-info inline"><h4>Debug Information:</h4>';
+                        html += '<p><strong>Table Name:</strong> ' + debug.table_name + '</p>';
+                        html += '<p><strong>Table Exists:</strong> ' + debug.table_exists + '</p>';
+                        
+                        if (debug.record_count !== undefined) {
+                            html += '<p><strong>Record Count:</strong> ' + debug.record_count + '</p>';
+                        }
+                        
+                        if (debug.table_creation_attempted) {
+                            html += '<p><strong>Table Creation:</strong> Attempted</p>';
+                        }
+                        
+                        html += '<p><strong>WP Debug:</strong> ' + debug.wp_debug + '</p>';
+                        html += '<p><strong>WP Debug Log:</strong> ' + debug.wp_debug_log + '</p>';
+                        
+                        if (debug.recent_records && debug.recent_records.length > 0) {
+                            html += '<p><strong>Recent Records:</strong> ' + debug.recent_records.length + ' found</p>';
+                        }
+                        
+                        html += '</div>';
+                        statusDiv.html(html);
+                    } else {
+                        statusDiv.html('<div class="notice notice-error inline"><p>Debug failed: ' + (response.data.message || 'Unknown error') + '</p></div>');
+                    }
+                },
+                error: function() {
+                    button.prop('disabled', false).find('.dashicons').removeClass('dashicons-update-alt');
+                    statusDiv.html('<div class="notice notice-error inline"><p>Error running database debug.</p></div>');
+                }
+            });
+        });
+        
         // Delete history item
         $('.delete-history-item').on('click', function() {
             if (!confirm(wpKontextGen.strings.delete_confirm)) {

@@ -43,6 +43,7 @@ class WP_Kontext_Gen {
         $this->loader->add_action('wp_ajax_wp_kontext_gen_check_updates', $plugin_admin, 'handle_check_updates');
         $this->loader->add_action('wp_ajax_wp_kontext_gen_force_update_check', $plugin_admin, 'handle_force_update_check');
         $this->loader->add_action('wp_ajax_wp_kontext_gen_refresh_recent_generations', $plugin_admin, 'handle_refresh_recent_generations');
+        $this->loader->add_action('wp_ajax_wp_kontext_gen_debug_database', $plugin_admin, 'handle_debug_database');
         
         // Settings
         $this->loader->add_action('admin_init', $plugin_admin, 'register_settings');

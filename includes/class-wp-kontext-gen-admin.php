@@ -300,17 +300,60 @@ class WP_Kontext_Gen_Admin {
         global $wpdb;
         $table_name = $wpdb->prefix . 'kontext_gen_history';
         
-        $wpdb->insert(
-            $table_name,
-            array(
-                'user_id' => get_current_user_id(),
-                'prompt' => $params['prompt'],
-                'input_image_url' => isset($params['input_image']) ? $params['input_image'] : null,
-                'parameters' => json_encode($params),
-                'status' => $prediction['status'],
-                'prediction_id' => $prediction['id'],
-            )
+        // Check if table exists first
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
+        if (!$table_exists) {
+            error_log("WP Kontext Gen: History table $table_name does not exist");
+            // Try to create the table
+            $this->create_history_table();
+        }
+        
+        $insert_data = array(
+            'user_id' => get_current_user_id(),
+            'prompt' => $params['prompt'],
+            'input_image_url' => isset($params['input_image']) ? $params['input_image'] : null,
+            'parameters' => json_encode($params),
+            'status' => $prediction['status'],
+            'prediction_id' => $prediction['id'],
         );
+        
+        $result = $wpdb->insert($table_name, $insert_data);
+        
+        if ($result === false) {
+            error_log("WP Kontext Gen: Failed to insert into history table. Error: " . $wpdb->last_error);
+            error_log("WP Kontext Gen: Data attempted to insert: " . print_r($insert_data, true));
+        } else {
+            error_log("WP Kontext Gen: Successfully inserted into history table. ID: " . $wpdb->insert_id);
+        }
+    }
+    
+    /**
+     * Create history table if it doesn't exist
+     */
+    private function create_history_table() {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'kontext_gen_history';
+        
+        $charset_collate = $wpdb->get_charset_collate();
+        
+        $sql = "CREATE TABLE $table_name (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            user_id bigint(20) NOT NULL,
+            prompt text NOT NULL,
+            input_image_url text,
+            output_image_url text,
+            attachment_id bigint(20),
+            parameters text,
+            status varchar(20) DEFAULT 'pending',
+            cost_usd decimal(10,6) DEFAULT NULL,
+            prediction_id varchar(255),
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id)
+        ) $charset_collate;";
+        
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        $result = dbDelta($sql);
+        error_log("WP Kontext Gen: Created history table with result: " . print_r($result, true));
     }
     
     /**
@@ -635,6 +678,54 @@ class WP_Kontext_Gen_Admin {
         wp_send_json_success(array(
             'html' => $html,
             'message' => __('Recent generations refreshed', 'wp-kontext-gen')
+        ));
+    }
+    
+    /**
+     * Handle debug database request via AJAX
+     */
+    public function handle_debug_database() {
+        check_ajax_referer('wp_kontext_gen_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Unauthorized', 'wp-kontext-gen'));
+        }
+        
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'kontext_gen_history';
+        
+        $debug_info = array();
+        
+        // Check if table exists
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
+        $debug_info['table_exists'] = $table_exists ? 'Yes' : 'No';
+        $debug_info['table_name'] = $table_name;
+        
+        if ($table_exists) {
+            // Get table structure
+            $columns = $wpdb->get_results("DESCRIBE $table_name");
+            $debug_info['table_structure'] = $columns;
+            
+            // Count records
+            $count = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
+            $debug_info['record_count'] = $count;
+            
+            // Get recent records
+            $recent = $wpdb->get_results("SELECT * FROM $table_name ORDER BY id DESC LIMIT 5");
+            $debug_info['recent_records'] = $recent;
+        } else {
+            // Try to create table
+            $this->create_history_table();
+            $debug_info['table_creation_attempted'] = true;
+        }
+        
+        // Check WordPress error log for our messages
+        $debug_info['wp_debug'] = defined('WP_DEBUG') && WP_DEBUG ? 'Enabled' : 'Disabled';
+        $debug_info['wp_debug_log'] = defined('WP_DEBUG_LOG') && WP_DEBUG_LOG ? 'Enabled' : 'Disabled';
+        
+        wp_send_json_success(array(
+            'debug_info' => $debug_info,
+            'message' => __('Database debug information retrieved', 'wp-kontext-gen')
         ));
     }
 }

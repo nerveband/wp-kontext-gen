@@ -262,6 +262,18 @@ $current_model = get_option('wp_kontext_gen_model', 'dev');
                     <?php _e('Updates are automatically detected. You can also manually check for updates or manage the plugin in the WordPress Plugins page.', 'wp-kontext-gen'); ?>
                 </p>
             </div>
+            
+            <div class="attribution-section">
+                <h4><?php _e('Database Debug', 'wp-kontext-gen'); ?></h4>
+                <p><?php _e('If history is not working properly, use this tool to check database status.', 'wp-kontext-gen'); ?></p>
+                <div id="debug-status"></div>
+                <p>
+                    <button type="button" class="button button-secondary" id="debug-database">
+                        <span class="dashicons dashicons-database"></span>
+                        <?php _e('Debug Database', 'wp-kontext-gen'); ?>
+                    </button>
+                </p>
+            </div>
         </div>
     </div>
     
