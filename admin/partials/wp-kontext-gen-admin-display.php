@@ -59,8 +59,9 @@ $last_prompt = get_option('wp_kontext_gen_last_prompt', '');
     </div>
     
     <div class="wp-kontext-gen-container">
-        <div class="wp-kontext-gen-form-wrapper">
-            <h2><?php _e('Generate or Edit Image', 'wp-kontext-gen'); ?></h2>
+        <div class="wp-kontext-gen-main-content">
+            <div class="wp-kontext-gen-form-wrapper">
+                <h2><?php _e('Generate or Edit Image', 'wp-kontext-gen'); ?></h2>
             
             <form id="wp-kontext-gen-form">
                 <!-- Prompt -->
@@ -195,17 +196,19 @@ $last_prompt = get_option('wp_kontext_gen_last_prompt', '');
                     </div> <!-- Close advanced-options-content -->
                 </div>
             </form>
+            </div>
+            
+            <!-- Results Section -->
+            <div class="wp-kontext-gen-results">
+                <h2><?php _e('Results', 'wp-kontext-gen'); ?></h2>
+                <div id="generation-status"></div>
+                <div id="generation-result"></div>
+            </div>
         </div>
         
-        <!-- Results Section -->
-        <div class="wp-kontext-gen-results">
-            <h2><?php _e('Results', 'wp-kontext-gen'); ?></h2>
-            <div id="generation-status"></div>
-            <div id="generation-result"></div>
-        </div>
-        
-        <!-- Recent Generations Section -->
-        <div class="wp-kontext-gen-recent">
+        <!-- Recent Generations Sidebar -->
+        <div class="wp-kontext-gen-sidebar">
+            <div class="wp-kontext-gen-recent">
             <div class="recent-header">
                 <h2><?php _e('Recent Generations', 'wp-kontext-gen'); ?></h2>
                 <a href="<?php echo admin_url('admin.php?page=wp-kontext-gen-history'); ?>" class="button button-secondary">
@@ -264,17 +267,38 @@ $last_prompt = get_option('wp_kontext_gen_last_prompt', '');
                 }
                 ?>
             </div>
+            </div>
         </div>
     </div>
 </div>
 
 <style>
+.wp-kontext-gen-container {
+    display: flex;
+    gap: 30px;
+    max-width: 1400px;
+}
+
+.wp-kontext-gen-main-content {
+    flex: 1;
+    min-width: 0; /* Prevents flex item from overflowing */
+}
+
+.wp-kontext-gen-sidebar {
+    flex: 0 0 350px; /* Fixed width sidebar */
+    min-width: 350px;
+}
+
 .wp-kontext-gen-recent {
-    margin-top: 30px;
     background: white;
     border: 1px solid #c3c4c7;
     border-radius: 4px;
     padding: 20px;
+    margin: 0;
+    position: sticky;
+    top: 32px; /* Account for admin bar */
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
 }
 
 .recent-header {
@@ -292,8 +316,8 @@ $last_prompt = get_option('wp_kontext_gen_last_prompt', '');
 }
 
 .recent-generations-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 15px;
 }
 
@@ -312,7 +336,7 @@ $last_prompt = get_option('wp_kontext_gen_last_prompt', '');
 
 .recent-item-image {
     position: relative;
-    height: 120px;
+    height: 80px;
     background: #f0f0f0;
     display: flex;
     align-items: center;
@@ -406,5 +430,39 @@ $last_prompt = get_option('wp_kontext_gen_last_prompt', '');
 .no-recent-generations p {
     margin: 0;
     font-size: 16px;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+    .wp-kontext-gen-container {
+        flex-direction: column;
+    }
+    
+    .wp-kontext-gen-sidebar {
+        flex: none;
+        min-width: auto;
+    }
+    
+    .wp-kontext-gen-recent {
+        position: static;
+        max-height: none;
+        margin-top: 30px;
+    }
+    
+    .recent-generations-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+    
+    .recent-item-image {
+        height: 120px;
+    }
+}
+
+@media (max-width: 768px) {
+    .recent-generations-grid {
+        grid-template-columns: 1fr;
+    }
 }
 </style>
