@@ -38,6 +38,14 @@ $history_items = $wpdb->get_results($wpdb->prepare(
 <div class="wrap">
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
     
+    <?php if (!empty($history_items)) : ?>
+        <div class="tablenav top">
+            <div class="alignright">
+                <button type="button" class="button" id="clear_history_btn"><?php _e('Clear All History', 'wp-kontext-gen'); ?></button>
+            </div>
+        </div>
+    <?php endif; ?>
+    
     <?php if (empty($history_items)) : ?>
         <p><?php _e('No generations yet.', 'wp-kontext-gen'); ?></p>
     <?php else : ?>
@@ -113,11 +121,14 @@ $history_items = $wpdb->get_results($wpdb->prepare(
                                     <?php _e('View', 'wp-kontext-gen'); ?>
                                 </a>
                             <?php endif; ?>
-                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=wp-kontext-gen-history&action=delete&id=' . $item->id), 'wp_kontext_gen_delete_' . $item->id); ?>" 
-                               class="button button-small"
-                               onclick="return confirm('<?php _e('Are you sure you want to delete this generation?', 'wp-kontext-gen'); ?>');">
+                            <?php if ($item->attachment_id) : ?>
+                                <a href="<?php echo admin_url('post.php?post=' . $item->attachment_id . '&action=edit'); ?>" class="button button-small">
+                                    <?php _e('Edit in WP', 'wp-kontext-gen'); ?>
+                                </a>
+                            <?php endif; ?>
+                            <button type="button" class="button button-small delete-history-item" data-id="<?php echo $item->id; ?>">
                                 <?php _e('Delete', 'wp-kontext-gen'); ?>
-                            </a>
+                            </button>
                         </td>
                     </tr>
                 <?php endforeach; ?>

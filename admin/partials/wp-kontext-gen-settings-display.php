@@ -27,6 +27,14 @@ if (isset($_POST['submit'])) {
     }
     update_option('wp_kontext_gen_default_params', $defaults);
     
+    // Save default image
+    $default_image = isset($_POST['wp_kontext_gen_default_image']) ? esc_url_raw($_POST['wp_kontext_gen_default_image']) : '';
+    update_option('wp_kontext_gen_default_image', $default_image);
+    
+    // Save remember last image setting
+    $remember_last = isset($_POST['wp_kontext_gen_remember_last_image']) ? 1 : 0;
+    update_option('wp_kontext_gen_remember_last_image', $remember_last);
+    
     if ($is_valid) {
         echo '<div class="notice notice-success"><p>' . __('Settings saved successfully. API key is valid!', 'wp-kontext-gen') . '</p></div>';
     } else {
@@ -37,6 +45,8 @@ if (isset($_POST['submit'])) {
 // Get current settings
 $api_key = get_option('wp_kontext_gen_api_key', '');
 $defaults = get_option('wp_kontext_gen_default_params', array());
+$default_image = get_option('wp_kontext_gen_default_image', '');
+$remember_last = get_option('wp_kontext_gen_remember_last_image', 0);
 ?>
 
 <div class="wrap">
@@ -124,6 +134,37 @@ $defaults = get_option('wp_kontext_gen_default_params', array());
                         <?php _e('Enable fast mode by default', 'wp-kontext-gen'); ?>
                     </label>
                     <p class="description"><?php _e('Faster generation, may slightly reduce quality for difficult prompts', 'wp-kontext-gen'); ?></p>
+                </td>
+            </tr>
+        </table>
+        
+        <h2><?php _e('Image Settings', 'wp-kontext-gen'); ?></h2>
+        <p><?php _e('Configure default and last used image settings.', 'wp-kontext-gen'); ?></p>
+        
+        <table class="form-table">
+            <tr>
+                <th scope="row">
+                    <label for="wp_kontext_gen_default_image"><?php _e('Default Input Image', 'wp-kontext-gen'); ?></label>
+                </th>
+                <td>
+                    <input type="url" id="wp_kontext_gen_default_image" name="wp_kontext_gen_default_image" 
+                           value="<?php echo esc_attr($default_image); ?>" class="regular-text" />
+                    <button type="button" class="button" id="select_default_image"><?php _e('Select from Media Library', 'wp-kontext-gen'); ?></button>
+                    <p class="description"><?php _e('Default image to use when generating. Users can still change this.', 'wp-kontext-gen'); ?></p>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row">
+                    <?php _e('Remember Last Image', 'wp-kontext-gen'); ?>
+                </th>
+                <td>
+                    <label>
+                        <input type="checkbox" name="wp_kontext_gen_remember_last_image" value="1" 
+                               <?php checked($remember_last, 1); ?> />
+                        <?php _e('Remember the last used input image', 'wp-kontext-gen'); ?>
+                    </label>
+                    <p class="description"><?php _e('When enabled, the last used input image will be automatically loaded on the generation page.', 'wp-kontext-gen'); ?></p>
                 </td>
             </tr>
         </table>

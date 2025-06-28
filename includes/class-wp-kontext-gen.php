@@ -37,6 +37,8 @@ class WP_Kontext_Gen {
         // AJAX handlers
         $this->loader->add_action('wp_ajax_wp_kontext_gen_generate', $plugin_admin, 'handle_generate_request');
         $this->loader->add_action('wp_ajax_wp_kontext_gen_check_status', $plugin_admin, 'handle_check_status');
+        $this->loader->add_action('wp_ajax_wp_kontext_gen_delete_image', $plugin_admin, 'handle_delete_image');
+        $this->loader->add_action('wp_ajax_wp_kontext_gen_clear_history', $plugin_admin, 'handle_clear_history');
         
         // Settings
         $this->loader->add_action('admin_init', $plugin_admin, 'register_settings');

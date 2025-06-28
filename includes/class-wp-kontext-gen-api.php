@@ -210,4 +210,69 @@ class WP_Kontext_Gen_API {
         $response_code = wp_remote_retrieve_response_code($response);
         return $response_code === 200;
     }
+    
+    /**
+     * Download image and save to media library
+     */
+    public function save_to_media_library($image_url, $title = '') {
+        if (empty($image_url)) {
+            return new WP_Error('no_image_url', __('No image URL provided', 'wp-kontext-gen'));
+        }
+        
+        // Download the image
+        $response = wp_remote_get($image_url, array(
+            'timeout' => 30,
+        ));
+        
+        if (is_wp_error($response)) {
+            return $response;
+        }
+        
+        $image_data = wp_remote_retrieve_body($response);
+        $content_type = wp_remote_retrieve_header($response, 'content-type');
+        
+        // Determine file extension from content type
+        $extension = 'jpg';
+        if (strpos($content_type, 'png') !== false) {
+            $extension = 'png';
+        } elseif (strpos($content_type, 'webp') !== false) {
+            $extension = 'webp';
+        }
+        
+        // Generate filename
+        $filename = 'kontext-gen-' . date('Y-m-d-His') . '.' . $extension;
+        
+        // Upload to media library
+        $upload = wp_upload_bits($filename, null, $image_data);
+        
+        if ($upload['error']) {
+            return new WP_Error('upload_error', $upload['error']);
+        }
+        
+        // Prepare attachment data
+        $attachment = array(
+            'post_mime_type' => $content_type,
+            'post_title' => !empty($title) ? $title : 'Kontext Generated Image',
+            'post_content' => '',
+            'post_status' => 'inherit'
+        );
+        
+        // Insert attachment
+        $attach_id = wp_insert_attachment($attachment, $upload['file']);
+        
+        if (is_wp_error($attach_id)) {
+            return $attach_id;
+        }
+        
+        // Generate metadata
+        require_once(ABSPATH . 'wp-admin/includes/image.php');
+        $attach_data = wp_generate_attachment_metadata($attach_id, $upload['file']);
+        wp_update_attachment_metadata($attach_id, $attach_data);
+        
+        return array(
+            'id' => $attach_id,
+            'url' => wp_get_attachment_url($attach_id),
+            'file' => $upload['file']
+        );
+    }
 }

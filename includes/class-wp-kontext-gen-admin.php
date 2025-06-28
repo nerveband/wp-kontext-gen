@@ -77,6 +77,14 @@ class WP_Kontext_Gen_Admin {
         register_setting('wp_kontext_gen_settings', 'wp_kontext_gen_default_params', array(
             'sanitize_callback' => array($this, 'sanitize_default_params'),
         ));
+        
+        register_setting('wp_kontext_gen_settings', 'wp_kontext_gen_default_image', array(
+            'sanitize_callback' => 'esc_url_raw',
+        ));
+        
+        register_setting('wp_kontext_gen_settings', 'wp_kontext_gen_remember_last_image', array(
+            'sanitize_callback' => 'absint',
+        ));
     }
     
     /**
@@ -160,6 +168,8 @@ class WP_Kontext_Gen_Admin {
                 'error' => __('An error occurred', 'wp-kontext-gen'),
                 'select_image' => __('Select Input Image', 'wp-kontext-gen'),
                 'use_image' => __('Use This Image', 'wp-kontext-gen'),
+                'delete_confirm' => __('Are you sure you want to delete this image?', 'wp-kontext-gen'),
+                'clear_history_confirm' => __('Are you sure you want to clear all history? This cannot be undone.', 'wp-kontext-gen'),
             )
         ));
     }
@@ -232,6 +242,11 @@ class WP_Kontext_Gen_Admin {
         // Save to history
         $this->save_to_history($params, $result);
         
+        // Save last used image if enabled
+        if (get_option('wp_kontext_gen_remember_last_image') && !empty($params['input_image'])) {
+            update_option('wp_kontext_gen_last_image', $params['input_image']);
+        }
+        
         wp_send_json_success($result);
     }
     
@@ -298,7 +313,14 @@ class WP_Kontext_Gen_Admin {
         );
         
         if ($result['status'] === 'succeeded' && !empty($result['output'])) {
-            $update_data['output_image_url'] = is_array($result['output']) ? $result['output'][0] : $result['output'];
+            $output_url = is_array($result['output']) ? $result['output'][0] : $result['output'];
+            $update_data['output_image_url'] = $output_url;
+            
+            // Save to media library
+            $media_result = $this->api->save_to_media_library($output_url, 'Kontext Gen - ' . date('Y-m-d H:i:s'));
+            if (!is_wp_error($media_result)) {
+                $update_data['attachment_id'] = $media_result['id'];
+            }
         }
         
         $wpdb->update(
@@ -306,5 +328,73 @@ class WP_Kontext_Gen_Admin {
             $update_data,
             array('id' => $prediction_id)
         );
+    }
+    
+    /**
+     * Handle delete image request via AJAX
+     */
+    public function handle_delete_image() {
+        check_ajax_referer('wp_kontext_gen_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Unauthorized', 'wp-kontext-gen'));
+        }
+        
+        if (empty($_POST['history_id'])) {
+            wp_send_json_error(array('message' => __('History ID is required', 'wp-kontext-gen')));
+        }
+        
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'kontext_gen_history';
+        $history_id = intval($_POST['history_id']);
+        
+        // Get the history item
+        $item = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table_name WHERE id = %d",
+            $history_id
+        ));
+        
+        if (!$item) {
+            wp_send_json_error(array('message' => __('History item not found', 'wp-kontext-gen')));
+        }
+        
+        // Delete from media library if exists
+        if (!empty($item->attachment_id)) {
+            wp_delete_attachment($item->attachment_id, true);
+        }
+        
+        // Delete from history
+        $wpdb->delete($table_name, array('id' => $history_id));
+        
+        wp_send_json_success(array('message' => __('Image deleted successfully', 'wp-kontext-gen')));
+    }
+    
+    /**
+     * Handle clear history request via AJAX
+     */
+    public function handle_clear_history() {
+        check_ajax_referer('wp_kontext_gen_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Unauthorized', 'wp-kontext-gen'));
+        }
+        
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'kontext_gen_history';
+        
+        // Get all items with attachments
+        $items = $wpdb->get_results("SELECT attachment_id FROM $table_name WHERE attachment_id IS NOT NULL");
+        
+        // Delete all attachments
+        foreach ($items as $item) {
+            if (!empty($item->attachment_id)) {
+                wp_delete_attachment($item->attachment_id, true);
+            }
+        }
+        
+        // Clear the table
+        $wpdb->query("TRUNCATE TABLE $table_name");
+        
+        wp_send_json_success(array('message' => __('History cleared successfully', 'wp-kontext-gen')));
     }
 }

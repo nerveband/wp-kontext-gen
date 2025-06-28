@@ -21,6 +21,15 @@ if (empty($api_key)) {
 
 // Get default parameters
 $defaults = get_option('wp_kontext_gen_default_params', array());
+
+// Get default/last image
+$default_image = '';
+if (get_option('wp_kontext_gen_remember_last_image')) {
+    $default_image = get_option('wp_kontext_gen_last_image', '');
+}
+if (empty($default_image)) {
+    $default_image = get_option('wp_kontext_gen_default_image', '');
+}
 ?>
 
 <div class="wrap">
@@ -42,10 +51,18 @@ $defaults = get_option('wp_kontext_gen_default_params', array());
                 <div class="form-group">
                     <label for="input_image"><?php _e('Input Image (Required for editing)', 'wp-kontext-gen'); ?></label>
                     <div class="image-upload-wrapper">
-                        <input type="hidden" id="input_image" name="input_image" />
-                        <div id="input_image_preview" class="image-preview"></div>
-                        <button type="button" class="button" id="upload_input_image"><?php _e('Select Image', 'wp-kontext-gen'); ?></button>
-                        <button type="button" class="button" id="remove_input_image" style="display:none;"><?php _e('Remove', 'wp-kontext-gen'); ?></button>
+                        <input type="hidden" id="input_image" name="input_image" value="<?php echo esc_attr($default_image); ?>" />
+                        <div id="input_image_preview" class="image-preview">
+                            <?php if (!empty($default_image)) : ?>
+                                <img src="<?php echo esc_url($default_image); ?>" alt="" />
+                            <?php endif; ?>
+                        </div>
+                        <button type="button" class="button" id="upload_input_image">
+                            <?php echo !empty($default_image) ? __('Change Image', 'wp-kontext-gen') : __('Select Image', 'wp-kontext-gen'); ?>
+                        </button>
+                        <button type="button" class="button" id="remove_input_image" <?php echo empty($default_image) ? 'style="display:none;"' : ''; ?>>
+                            <?php _e('Remove', 'wp-kontext-gen'); ?>
+                        </button>
                     </div>
                     <p class="description"><?php _e('Image to use as reference for editing. Must be jpeg, png, gif, or webp.', 'wp-kontext-gen'); ?></p>
                 </div>

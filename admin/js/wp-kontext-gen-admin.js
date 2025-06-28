@@ -50,6 +50,96 @@
             $(this).hide();
         });
         
+        // Media uploader for default image in settings
+        $('#select_default_image').on('click', function(e) {
+            e.preventDefault();
+            
+            let mediaUploader = wp.media({
+                title: wpKontextGen.strings.select_image,
+                button: {
+                    text: wpKontextGen.strings.use_image
+                },
+                multiple: false,
+                library: {
+                    type: ['image']
+                }
+            });
+            
+            mediaUploader.on('select', function() {
+                let attachment = mediaUploader.state().get('selection').first().toJSON();
+                $('#wp_kontext_gen_default_image').val(attachment.url);
+            });
+            
+            mediaUploader.open();
+        });
+        
+        // Delete history item
+        $('.delete-history-item').on('click', function() {
+            if (!confirm(wpKontextGen.strings.delete_confirm)) {
+                return;
+            }
+            
+            let button = $(this);
+            let historyId = button.data('id');
+            
+            button.prop('disabled', true).text('Deleting...');
+            
+            $.ajax({
+                url: wpKontextGen.ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'wp_kontext_gen_delete_image',
+                    nonce: wpKontextGen.nonce,
+                    history_id: historyId
+                },
+                success: function(response) {
+                    if (response.success) {
+                        button.closest('tr').fadeOut(function() {
+                            $(this).remove();
+                        });
+                    } else {
+                        alert(response.data.message || wpKontextGen.strings.error);
+                        button.prop('disabled', false).text('Delete');
+                    }
+                },
+                error: function() {
+                    alert(wpKontextGen.strings.error);
+                    button.prop('disabled', false).text('Delete');
+                }
+            });
+        });
+        
+        // Clear history
+        $('#clear_history_btn').on('click', function() {
+            if (!confirm(wpKontextGen.strings.clear_history_confirm)) {
+                return;
+            }
+            
+            let button = $(this);
+            button.prop('disabled', true).text('Clearing...');
+            
+            $.ajax({
+                url: wpKontextGen.ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'wp_kontext_gen_clear_history',
+                    nonce: wpKontextGen.nonce
+                },
+                success: function(response) {
+                    if (response.success) {
+                        location.reload();
+                    } else {
+                        alert(response.data.message || wpKontextGen.strings.error);
+                        button.prop('disabled', false).text('Clear All History');
+                    }
+                },
+                error: function() {
+                    alert(wpKontextGen.strings.error);
+                    button.prop('disabled', false).text('Clear All History');
+                }
+            });
+        });
+        
         // Handle form submission
         $('#wp-kontext-gen-form').on('submit', function(e) {
             e.preventDefault();

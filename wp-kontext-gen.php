@@ -48,6 +48,7 @@ function wp_kontext_gen_activate() {
         prompt text NOT NULL,
         input_image_url text,
         output_image_url text,
+        attachment_id bigint(20),
         parameters text,
         status varchar(20) DEFAULT 'pending',
         created_at datetime DEFAULT CURRENT_TIMESTAMP,

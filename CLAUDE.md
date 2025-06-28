@@ -142,12 +142,30 @@ Common issues and solutions:
    - Verify jQuery is loaded
    - Check AJAX URL is correct
 
+## Completion Notification Format
+
+When using the ntfy.sh notification system, use this format for clickable links:
+
+```bash
+curl -H "Title: Project Name - Phase Complete ✅" \
+     -H "Tags: relevant,tags,based,on,work" \
+     -H "Click: https://github.com/nerveband/wp-kontext-gen" \
+     -d "📋 Completed:
+- Brief description of what was done
+- Key files/outputs created
+- Important results
+
+⏱️ $(date '+%H:%M')" \
+     https://ntfy.sh/cc-bfl
+```
+
+The `Click` header creates a clickable action button in supported clients.
+
 ## Future Enhancements
 
 Potential improvements:
 - Batch processing
 - Preset prompt templates
-- Integration with media library
 - Shortcode support
 - Gutenberg block
 - Multi-language support
