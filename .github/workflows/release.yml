@@ -1,0 +1,136 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.2.0)'
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            echo "tag_name=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+            echo "tag_name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update plugin version
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          VERSION_NUMBER="${VERSION#v}"
+          
+          # Update main plugin file
+          sed -i "s/Version: .*/Version: $VERSION_NUMBER/" wp-kontext-gen.php
+          sed -i "s/define('WP_KONTEXT_GEN_VERSION', '.*');/define('WP_KONTEXT_GEN_VERSION', '$VERSION_NUMBER');/" wp-kontext-gen.php
+          
+          # Update readme
+          sed -i "s/Stable tag: .*/Stable tag: $VERSION_NUMBER/" README.md
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get commits since last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          
+          if [ -z "$LAST_TAG" ]; then
+            # First release
+            COMMITS=$(git log --pretty=format:"- %s" --reverse)
+          else
+            # Get commits since last tag
+            COMMITS=$(git log --pretty=format:"- %s" $LAST_TAG..HEAD --reverse)
+          fi
+          
+          # Create changelog
+          cat > CHANGELOG.md << EOF
+          # Changelog
+          
+          ## ${{ steps.version.outputs.version }}
+          
+          ### Changes:
+          $COMMITS
+          
+          ### Features:
+          - Text-based image editing using FLUX.1 Kontext [dev]
+          - WordPress media library integration
+          - Generation history tracking
+          - Customizable default parameters
+          - Secure API key management
+          
+          ### Requirements:
+          - WordPress 5.0 or higher
+          - PHP 7.2 or higher
+          - Active Replicate API key
+          EOF
+
+      - name: Create plugin package
+        run: |
+          # Create temp directory for packaging
+          mkdir -p /tmp/wp-kontext-gen-package
+          
+          # Copy plugin files (exclude dev files)
+          rsync -av . /tmp/wp-kontext-gen-package/wp-kontext-gen/ \
+            --exclude='.git*' \
+            --exclude='.github' \
+            --exclude='node_modules' \
+            --exclude='*.log' \
+            --exclude='CHANGELOG.md' \
+            --exclude='.DS_Store'
+          
+          # Create ZIP file
+          cd /tmp/wp-kontext-gen-package
+          zip -r wp-kontext-gen-${{ steps.version.outputs.version }}.zip wp-kontext-gen/
+          
+          # Move back to workspace
+          mv wp-kontext-gen-${{ steps.version.outputs.version }}.zip $GITHUB_WORKSPACE/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.tag_name }}
+          name: WP Kontext Gen ${{ steps.version.outputs.version }}
+          body_path: CHANGELOG.md
+          files: |
+            wp-kontext-gen-${{ steps.version.outputs.version }}.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update plugin repository info
+        run: |
+          # Create/update a releases.json file for auto-updater
+          cat > releases.json << EOF
+          {
+            "version": "${{ steps.version.outputs.version }}",
+            "download_url": "https://github.com/nerveband/wp-kontext-gen/releases/download/${{ steps.version.outputs.version }}/wp-kontext-gen-${{ steps.version.outputs.version }}.zip",
+            "details_url": "https://github.com/nerveband/wp-kontext-gen/releases/tag/${{ steps.version.outputs.version }}",
+            "date": "$(date -u +%Y-%m-%d)"
+          }
+          EOF
+          
+          # Commit and push the updated files
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add wp-kontext-gen.php README.md releases.json
+          git commit -m "Auto-update version to ${{ steps.version.outputs.version }}" || exit 0
+          git push origin HEAD:main

@@ -25,11 +25,19 @@ WP Kontext Gen brings the power of Black Forest Labs' FLUX.1 Kontext model direc
 
 ## Installation
 
-1. Download the plugin zip file
-2. Navigate to WordPress Admin > Plugins > Add New
-3. Click "Upload Plugin" and select the zip file
-4. Activate the plugin
-5. Go to Kontext Gen > Settings to configure your API key
+### From GitHub Releases (Recommended)
+1. Go to the [Releases page](https://github.com/nerveband/wp-kontext-gen/releases)
+2. Download the latest `wp-kontext-gen-vX.X.X.zip` file
+3. Navigate to WordPress Admin > Plugins > Add New
+4. Click "Upload Plugin" and select the zip file
+5. Activate the plugin
+6. Go to Kontext Gen > Settings to configure your API key
+
+### Manual Installation
+1. Clone or download this repository
+2. Upload the `wp-kontext-gen` folder to `/wp-content/plugins/`
+3. Activate the plugin through the 'Plugins' menu in WordPress
+4. Configure your Replicate API key in the settings
 
 ## Configuration
 
@@ -99,6 +107,32 @@ View all your previous generations in **Kontext Gen > History**:
 - WordPress 5.0 or higher
 - PHP 7.2 or higher
 - Active Replicate API key
+
+## Auto-Updates
+
+This plugin includes automatic update functionality that checks for new releases from our GitHub repository. When a new version is available, you'll see an update notification in your WordPress admin, just like with plugins from the WordPress.org repository.
+
+### How It Works
+- Checks GitHub releases for newer versions
+- Shows update notifications in WordPress admin
+- Allows one-click updates through the admin interface
+- Maintains all your settings and history during updates
+
+## Releases
+
+Automated releases are created using GitHub Actions when new tags are pushed:
+
+### Creating a Release
+1. Update version in `wp-kontext-gen.php`
+2. Create and push a new tag: `git tag v1.2.0 && git push origin v1.2.0`
+3. GitHub Actions will automatically:
+   - Generate release notes from commits
+   - Package the plugin as a ZIP file
+   - Create a GitHub release
+   - Update version references
+
+### Manual Release
+You can also trigger a release manually from the GitHub Actions tab using the "workflow_dispatch" event.
 
 ## Support
 

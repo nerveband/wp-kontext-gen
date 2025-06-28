@@ -25,11 +25,17 @@ define('WP_KONTEXT_GEN_MODEL_VERSION', 'black-forest-labs/flux-kontext-dev');
 require_once WP_KONTEXT_GEN_PLUGIN_PATH . 'includes/class-wp-kontext-gen.php';
 require_once WP_KONTEXT_GEN_PLUGIN_PATH . 'includes/class-wp-kontext-gen-api.php';
 require_once WP_KONTEXT_GEN_PLUGIN_PATH . 'includes/class-wp-kontext-gen-admin.php';
+require_once WP_KONTEXT_GEN_PLUGIN_PATH . 'includes/class-wp-kontext-gen-updater.php';
 
 // Initialize the plugin
 function wp_kontext_gen_init() {
     $plugin = new WP_Kontext_Gen();
     $plugin->run();
+    
+    // Initialize auto-updater
+    if (is_admin()) {
+        new WP_Kontext_Gen_Updater(__FILE__);
+    }
 }
 add_action('plugins_loaded', 'wp_kontext_gen_init');
 
