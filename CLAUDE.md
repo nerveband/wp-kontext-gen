@@ -142,6 +142,54 @@ Common issues and solutions:
    - Verify jQuery is loaded
    - Check AJAX URL is correct
 
+## Release Process
+
+**CRITICAL**: After making changes and pushing to git, you MUST create a GitHub release for the auto-updater to work:
+
+### Step-by-Step Release Process:
+1. **Update Version Numbers**:
+   ```php
+   // In wp-kontext-gen.php (both places):
+   * Version: 1.x.x
+   define('WP_KONTEXT_GEN_VERSION', '1.x.x');
+   ```
+
+2. **Commit and Push Changes**:
+   ```bash
+   git add -A
+   git commit -m "Description of changes"
+   git push
+   ```
+
+3. **Create GitHub Release** (REQUIRED):
+   ```bash
+   gh release create v1.x.x \
+     --title "v1.x.x - Feature Name" \
+     --notes "## ✨ New Features
+   - List of changes
+   - Bug fixes
+   - Improvements
+   
+   **Full Changelog**: https://github.com/nerveband/wp-kontext-gen/compare/v1.x.x...v1.y.y" \
+     --generate-notes
+   ```
+
+4. **Verify Release**: 
+   - Check that ZIP file is auto-generated
+   - Test update checker in WordPress admin
+   - Verify changelog displays correctly
+
+### Why This Matters:
+- **Auto-Updater Requires Releases**: The plugin checks GitHub releases API
+- **Users Get Notifications**: WordPress shows update available
+- **Seamless Updates**: Users can update with one click
+- **Version History**: Maintains proper changelog
+
+### Release Naming Convention:
+- `v1.0.0` - Major release
+- `v1.1.0` - Minor features 
+- `v1.0.1` - Bug fixes
+
 ## Completion Notification Format
 
 When using the ntfy.sh notification system, use this format for clickable links:
