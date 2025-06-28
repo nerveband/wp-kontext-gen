@@ -67,7 +67,7 @@ $total_cost = $admin->get_total_cost();
                     <th style="width: 100px;"><?php _e('Status', 'wp-kontext-gen'); ?></th>
                     <th style="width: 80px;"><?php _e('Cost', 'wp-kontext-gen'); ?></th>
                     <th style="width: 150px;"><?php _e('Date', 'wp-kontext-gen'); ?></th>
-                    <th style="width: 140px;"><?php _e('Actions', 'wp-kontext-gen'); ?></th>
+                    <th style="width: 160px;"><?php _e('Actions', 'wp-kontext-gen'); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -77,14 +77,28 @@ $total_cost = $admin->get_total_cost();
                     <tr>
                         <td>
                             <?php if ($item->output_image_url) : ?>
-                                <a href="<?php echo esc_url($item->output_image_url); ?>" target="_blank">
-                                    <img src="<?php echo esc_url($item->output_image_url); ?>" style="max-width: 150px; height: auto;" />
+                                <!-- Generated Output Image -->
+                                <a href="<?php echo esc_url($item->output_image_url); ?>" target="_blank" title="<?php _e('Click to view full size generated image', 'wp-kontext-gen'); ?>">
+                                    <img src="<?php echo esc_url($item->output_image_url); ?>" style="max-width: 150px; height: auto; border: 2px solid #00a32a; border-radius: 4px;" />
                                 </a>
+                                <div class="image-indicator generated">
+                                    <strong><?php _e('✓ Generated', 'wp-kontext-gen'); ?></strong>
+                                </div>
                             <?php elseif ($item->input_image_url) : ?>
-                                <img src="<?php echo esc_url($item->input_image_url); ?>" style="max-width: 150px; height: auto; opacity: 0.5;" />
+                                <!-- Input Image (Fallback) -->
+                                <div title="<?php _e('Input image - generation may have failed or still processing', 'wp-kontext-gen'); ?>">
+                                    <img src="<?php echo esc_url($item->input_image_url); ?>" style="max-width: 150px; height: auto; opacity: 0.6; border: 2px solid #ddd; border-radius: 4px;" />
+                                    <div class="image-indicator input-only">
+                                        <?php _e('Input only', 'wp-kontext-gen'); ?>
+                                    </div>
+                                </div>
                             <?php else : ?>
-                                <div style="width: 150px; height: 100px; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
-                                    <?php _e('No image', 'wp-kontext-gen'); ?>
+                                <!-- No Image -->
+                                <div style="width: 150px; height: 100px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; border: 2px dashed #ddd; border-radius: 4px;">
+                                    <div style="text-align: center; color: #666;">
+                                        <div style="font-size: 24px;">📷</div>
+                                        <div style="font-size: 11px;"><?php _e('No image', 'wp-kontext-gen'); ?></div>
+                                    </div>
                                 </div>
                             <?php endif; ?>
                         </td>
@@ -145,26 +159,70 @@ $total_cost = $admin->get_total_cost();
                             <?php echo date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($item->created_at)); ?>
                         </td>
                         <td>
-                            <?php if ($item->output_image_url) : ?>
-                                <a href="<?php echo esc_url($item->output_image_url); ?>" class="button button-small" target="_blank">
-                                    <?php _e('View', 'wp-kontext-gen'); ?>
-                                </a>
-                                <?php if (!$item->attachment_id) : ?>
-                                    <button type="button" class="button button-small save-to-media-btn" 
-                                            data-url="<?php echo esc_attr($item->output_image_url); ?>" 
-                                            data-title="<?php echo esc_attr(substr($item->prompt, 0, 50) . '...'); ?>">
-                                        <?php _e('Save to Media', 'wp-kontext-gen'); ?>
+                            <div class="history-actions">
+                                <?php if ($item->output_image_url) : ?>
+                                    <!-- View Full Size Button -->
+                                    <a href="<?php echo esc_url($item->output_image_url); ?>" 
+                                       class="button button-small button-primary" 
+                                       target="_blank" 
+                                       title="<?php _e('Open generated image in new tab', 'wp-kontext-gen'); ?>">
+                                        📖 <?php _e('View Full Size', 'wp-kontext-gen'); ?>
+                                    </a>
+                                    
+                                    <!-- Download Button -->
+                                    <button type="button" class="button button-small" 
+                                            onclick="wpKontextGenDownload('<?php echo esc_js($item->output_image_url); ?>')"
+                                            title="<?php _e('Download generated image to your computer', 'wp-kontext-gen'); ?>">
+                                        ⬇️ <?php _e('Download', 'wp-kontext-gen'); ?>
+                                    </button>
+                                    
+                                    <!-- Save to Media Library or Edit in WP -->
+                                    <?php if ($item->attachment_id) : ?>
+                                        <a href="<?php echo admin_url('post.php?post=' . $item->attachment_id . '&action=edit'); ?>" 
+                                           class="button button-small"
+                                           title="<?php _e('Edit image in WordPress media library', 'wp-kontext-gen'); ?>">
+                                            ✏️ <?php _e('Edit in Media Library', 'wp-kontext-gen'); ?>
+                                        </a>
+                                    <?php else : ?>
+                                        <button type="button" class="button button-small save-to-media-btn" 
+                                                data-url="<?php echo esc_attr($item->output_image_url); ?>" 
+                                                data-title="<?php echo esc_attr('Kontext Gen - ' . substr($item->prompt, 0, 50) . '...'); ?>"
+                                                title="<?php _e('Save image to WordPress media library', 'wp-kontext-gen'); ?>">
+                                            💾 <?php _e('Save to Media Library', 'wp-kontext-gen'); ?>
+                                        </button>
+                                    <?php endif; ?>
+                                    
+                                    <!-- Delete Button -->
+                                    <button type="button" class="button button-small button-danger delete-history-item" 
+                                            data-id="<?php echo $item->id; ?>"
+                                            title="<?php _e('Delete this generation from history', 'wp-kontext-gen'); ?>">
+                                        🗑️ <?php _e('Delete', 'wp-kontext-gen'); ?>
+                                    </button>
+                                <?php else : ?>
+                                    <!-- No output image available -->
+                                    <div style="color: #666; font-style: italic; margin-bottom: 5px;">
+                                        <?php 
+                                        switch ($item->status) {
+                                            case 'failed':
+                                                echo '❌ ' . __('Generation failed', 'wp-kontext-gen');
+                                                break;
+                                            case 'processing':
+                                            case 'starting':
+                                                echo '⏳ ' . __('Still processing...', 'wp-kontext-gen');
+                                                break;
+                                            default:
+                                                echo '❓ ' . __('No output available', 'wp-kontext-gen');
+                                                break;
+                                        }
+                                        ?>
+                                    </div>
+                                    <button type="button" class="button button-small button-danger delete-history-item" 
+                                            data-id="<?php echo $item->id; ?>"
+                                            title="<?php _e('Delete this generation from history', 'wp-kontext-gen'); ?>">
+                                        🗑️ <?php _e('Delete', 'wp-kontext-gen'); ?>
                                     </button>
                                 <?php endif; ?>
-                            <?php endif; ?>
-                            <?php if ($item->attachment_id) : ?>
-                                <a href="<?php echo admin_url('post.php?post=' . $item->attachment_id . '&action=edit'); ?>" class="button button-small">
-                                    <?php _e('Edit in WP', 'wp-kontext-gen'); ?>
-                                </a>
-                            <?php endif; ?>
-                            <button type="button" class="button button-small delete-history-item" data-id="<?php echo $item->id; ?>">
-                                <?php _e('Delete', 'wp-kontext-gen'); ?>
-                            </button>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -209,5 +267,53 @@ $total_cost = $admin->get_total_cost();
 .status-warning {
     background: #fff3cd;
     color: #856404;
+}
+
+/* History Action Buttons */
+.history-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.history-actions .button-small {
+    font-size: 11px;
+    padding: 2px 6px;
+    height: auto;
+    line-height: 1.4;
+    min-height: 22px;
+}
+
+.history-actions .button-primary {
+    background: #2271b1;
+    border-color: #2271b1;
+    color: white;
+}
+
+.history-actions .button-danger {
+    background: #d63638;
+    border-color: #d63638;
+    color: white;
+}
+
+.history-actions .button-danger:hover {
+    background: #b32d2e;
+    border-color: #b32d2e;
+}
+
+/* Generated vs Input Image Indicators */
+.image-indicator {
+    font-size: 11px;
+    text-align: center;
+    margin-top: 2px;
+    font-weight: 500;
+}
+
+.image-indicator.generated {
+    color: #00a32a;
+}
+
+.image-indicator.input-only {
+    color: #666;
 }
 </style>
