@@ -448,7 +448,8 @@
         
         // Show result
         function showResult(data) {
-            $('#generation-status').removeClass('notice-info notice-error').addClass('notice-success').html('Generation completed successfully!');
+            let successMessage = 'Generation completed successfully! <a href="' + wpKontextGen.adminUrl + 'admin.php?page=wp-kontext-gen-history" class="button button-small button-secondary" style="margin-left: 10px;">View in History</a>';
+            $('#generation-status').removeClass('notice-info notice-error').addClass('notice-success').html(successMessage);
             
             let output = data.output;
             if (typeof output === 'string') {
@@ -475,6 +476,9 @@
                 
                 $('#generation-result').html(html);
             }
+            
+            // Refresh recent generations section
+            refreshRecentGenerations();
         }
         
         // Show error
@@ -486,6 +490,29 @@
         function resetForm() {
             $('#generate-btn').prop('disabled', false).text('Generate Image');
             $('#cancel-btn').hide();
+        }
+        
+        // Refresh recent generations section
+        function refreshRecentGenerations() {
+            $.ajax({
+                url: wpKontextGen.ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'wp_kontext_gen_refresh_recent_generations',
+                    nonce: wpKontextGen.nonce
+                },
+                success: function(response) {
+                    if (response.success && response.data.html) {
+                        $('#recent-generations-content').fadeOut(200, function() {
+                            $(this).html(response.data.html).fadeIn(200);
+                        });
+                    }
+                },
+                error: function() {
+                    // Silently fail - not critical
+                    console.log('Failed to refresh recent generations');
+                }
+            });
         }
     });
     

@@ -203,5 +203,208 @@ $last_prompt = get_option('wp_kontext_gen_last_prompt', '');
             <div id="generation-status"></div>
             <div id="generation-result"></div>
         </div>
+        
+        <!-- Recent Generations Section -->
+        <div class="wp-kontext-gen-recent">
+            <div class="recent-header">
+                <h2><?php _e('Recent Generations', 'wp-kontext-gen'); ?></h2>
+                <a href="<?php echo admin_url('admin.php?page=wp-kontext-gen-history'); ?>" class="button button-secondary">
+                    <?php _e('View All History', 'wp-kontext-gen'); ?>
+                </a>
+            </div>
+            <div id="recent-generations-content">
+                <?php
+                // Load recent generations
+                global $wpdb;
+                $table_name = $wpdb->prefix . 'kontext_gen_history';
+                $recent_items = $wpdb->get_results($wpdb->prepare(
+                    "SELECT * FROM $table_name WHERE user_id = %d ORDER BY created_at DESC LIMIT 3",
+                    get_current_user_id()
+                ));
+                
+                if (!empty($recent_items)) {
+                    echo '<div class="recent-generations-grid">';
+                    foreach ($recent_items as $item) {
+                        $parameters = json_decode($item->parameters, true);
+                        ?>
+                        <div class="recent-item">
+                            <div class="recent-item-image">
+                                <?php if ($item->output_image_url) : ?>
+                                    <a href="<?php echo esc_url($item->output_image_url); ?>" target="_blank">
+                                        <img src="<?php echo esc_url($item->output_image_url); ?>" alt="Generated image" />
+                                    </a>
+                                    <div class="image-status success"><?php _e('✓ Generated', 'wp-kontext-gen'); ?></div>
+                                <?php elseif ($item->input_image_url) : ?>
+                                    <img src="<?php echo esc_url($item->input_image_url); ?>" alt="Input image" style="opacity: 0.6;" />
+                                    <div class="image-status <?php echo $item->status; ?>"><?php echo ucfirst($item->status); ?></div>
+                                <?php else : ?>
+                                    <div class="no-image">
+                                        <div class="no-image-icon">📷</div>
+                                        <div class="image-status <?php echo $item->status; ?>"><?php echo ucfirst($item->status); ?></div>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            <div class="recent-item-info">
+                                <div class="recent-prompt"><?php echo esc_html(substr($item->prompt, 0, 80) . (strlen($item->prompt) > 80 ? '...' : '')); ?></div>
+                                <div class="recent-meta">
+                                    <span class="recent-date"><?php echo human_time_diff(strtotime($item->created_at), current_time('timestamp')); ?> ago</span>
+                                    <?php if ($item->cost_usd > 0) : ?>
+                                        <span class="recent-cost">$<?php echo number_format($item->cost_usd, 4); ?></span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                        <?php
+                    }
+                    echo '</div>';
+                } else {
+                    echo '<div class="no-recent-generations">';
+                    echo '<p>' . __('No generations yet. Create your first image above!', 'wp-kontext-gen') . '</p>';
+                    echo '</div>';
+                }
+                ?>
+            </div>
+        </div>
     </div>
 </div>
+
+<style>
+.wp-kontext-gen-recent {
+    margin-top: 30px;
+    background: white;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.recent-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+}
+
+.recent-header h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.recent-generations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.recent-item {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #f9f9f9;
+    transition: transform 0.2s ease;
+}
+
+.recent-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.recent-item-image {
+    position: relative;
+    height: 120px;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.recent-item-image img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+}
+
+.recent-item-image .no-image {
+    text-align: center;
+    color: #666;
+}
+
+.recent-item-image .no-image-icon {
+    font-size: 32px;
+    margin-bottom: 5px;
+}
+
+.image-status {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    padding: 2px 6px;
+    font-size: 11px;
+    border-radius: 3px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.image-status.success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.image-status.succeeded {
+    background: #d4edda;
+    color: #155724;
+}
+
+.image-status.failed {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.image-status.processing,
+.image-status.starting {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.recent-item-info {
+    padding: 12px;
+}
+
+.recent-prompt {
+    font-weight: 500;
+    margin-bottom: 8px;
+    line-height: 1.3;
+    color: #333;
+}
+
+.recent-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #666;
+}
+
+.recent-cost {
+    background: #e7f5ff;
+    color: #0066cc;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 500;
+}
+
+.no-recent-generations {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+.no-recent-generations p {
+    margin: 0;
+    font-size: 16px;
+}
+</style>

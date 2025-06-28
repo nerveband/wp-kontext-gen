@@ -569,4 +569,72 @@ class WP_Kontext_Gen_Admin {
                 __('You have the latest version!', 'wp-kontext-gen')
         ));
     }
+    
+    /**
+     * Handle refresh recent generations request via AJAX
+     */
+    public function handle_refresh_recent_generations() {
+        check_ajax_referer('wp_kontext_gen_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Unauthorized', 'wp-kontext-gen'));
+        }
+        
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'kontext_gen_history';
+        $recent_items = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM $table_name WHERE user_id = %d ORDER BY created_at DESC LIMIT 3",
+            get_current_user_id()
+        ));
+        
+        ob_start();
+        
+        if (!empty($recent_items)) {
+            echo '<div class="recent-generations-grid">';
+            foreach ($recent_items as $item) {
+                $parameters = json_decode($item->parameters, true);
+                ?>
+                <div class="recent-item">
+                    <div class="recent-item-image">
+                        <?php if ($item->output_image_url) : ?>
+                            <a href="<?php echo esc_url($item->output_image_url); ?>" target="_blank">
+                                <img src="<?php echo esc_url($item->output_image_url); ?>" alt="Generated image" />
+                            </a>
+                            <div class="image-status success"><?php _e('✓ Generated', 'wp-kontext-gen'); ?></div>
+                        <?php elseif ($item->input_image_url) : ?>
+                            <img src="<?php echo esc_url($item->input_image_url); ?>" alt="Input image" style="opacity: 0.6;" />
+                            <div class="image-status <?php echo $item->status; ?>"><?php echo ucfirst($item->status); ?></div>
+                        <?php else : ?>
+                            <div class="no-image">
+                                <div class="no-image-icon">📷</div>
+                                <div class="image-status <?php echo $item->status; ?>"><?php echo ucfirst($item->status); ?></div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="recent-item-info">
+                        <div class="recent-prompt"><?php echo esc_html(substr($item->prompt, 0, 80) . (strlen($item->prompt) > 80 ? '...' : '')); ?></div>
+                        <div class="recent-meta">
+                            <span class="recent-date"><?php echo human_time_diff(strtotime($item->created_at), current_time('timestamp')); ?> ago</span>
+                            <?php if ($item->cost_usd > 0) : ?>
+                                <span class="recent-cost">$<?php echo number_format($item->cost_usd, 4); ?></span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <?php
+            }
+            echo '</div>';
+        } else {
+            echo '<div class="no-recent-generations">';
+            echo '<p>' . __('No generations yet. Create your first image above!', 'wp-kontext-gen') . '</p>';
+            echo '</div>';
+        }
+        
+        $html = ob_get_clean();
+        
+        wp_send_json_success(array(
+            'html' => $html,
+            'message' => __('Recent generations refreshed', 'wp-kontext-gen')
+        ));
+    }
 }
